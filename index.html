@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="th" data-skin="ops">
+<head>
+<meta charset="utf-8">
+<script>try{if(localStorage.getItem('mode:v1')==='night')document.documentElement.dataset.skin='night'}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>การคำนวณค่าอำนาจกำลังรบเปรียบเทียบ</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=IBM+Plex+Sans+Thai:wght@400;600;700&display=swap">
+<style>
+:root{--bg:#eef1f4;--panel:#fff;--ink:#1c2733;--mute:#5d6b79;--line:#b9c3cd;--soft:#dde3e9;--head:#dfe6ed;--blue:#1f5fa8;--red:#b23a2f;--bluebg:#e7eff9;--redbg:#faeceb;--ok:#1e7f4b;--okbg:#e0f2e8;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141a21;--panel:#1d252e;--ink:#e6ebf0;--mute:#93a1af;--line:#46535f;--soft:#2c3742;--head:#27323d;--blue:#6aaeee;--red:#ec8579;--bluebg:#1d2d41;--redbg:#3a2522;--ok:#5fcf8f;--okbg:#1b3328}}
+:root[data-theme="dark"]{--bg:#141a21;--panel:#1d252e;--ink:#e6ebf0;--mute:#93a1af;--line:#46535f;--soft:#2c3742;--head:#27323d;--blue:#6aaeee;--red:#ec8579;--bluebg:#1d2d41;--redbg:#3a2522;--ok:#5fcf8f;--okbg:#1b3328}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Sarabun','Noto Sans Thai',Tahoma,sans-serif;line-height:1.5}
+main{max-width:1120px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:1.5rem;margin:0 0 14px;text-align:center}
+h2{font-size:1.1rem;margin:26px 0 8px}
+.note{color:var(--mute);font-size:.9rem;margin:0 0 14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:16px}
+.ttl{background:var(--head);text-align:center;font-weight:700;font-size:1.05rem;padding:8px 12px;border-bottom:1px solid var(--line)}
+.pair{display:grid;grid-template-columns:1fr 1fr}
+.side{padding:0 0 10px}
+.side+.side{border-left:1px solid var(--line)}
+@media(max-width:760px){.pair{grid-template-columns:1fr}.side+.side{border-left:0;border-top:1px solid var(--line)}}
+.sh{padding:6px 12px;font-weight:700}
+.s-b .sh{background:var(--bluebg);color:var(--blue)}
+.s-r .sh{background:var(--redbg);color:var(--red)}
+table{width:100%;border-collapse:collapse}
+th{font-weight:600;font-size:.82rem;color:var(--mute);text-align:left;padding:6px 4px;border-bottom:1px solid var(--soft)}
+th:first-child,td:first-child{padding-left:12px}
+td{padding:4px}
+tbody tr:nth-child(even){background:color-mix(in srgb,var(--head) 35%,transparent)}
+.c{text-align:center}
+input,select{font:inherit;font-size:.92rem;color:var(--ink);background:var(--panel);border:1px solid var(--soft);border-radius:4px;padding:3px 5px;width:100%;min-width:0}
+input[type=number]{text-align:center}
+.cn{margin-top:3px}
+select option{background:var(--panel);color:var(--ink)}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+button{font:inherit;font-size:.88rem;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:4px;padding:2px 10px}
+button:hover{background:var(--head)}
+.del{border:0;background:transparent;color:var(--mute);font-size:1.1rem;padding:0 6px;line-height:1}
+.del:hover{color:var(--red);background:transparent}
+.addr td{padding:8px 4px 6px 12px}
+tfoot td{border-top:1px solid var(--soft)}
+tfoot .addr td{border-top:0}
+.raw,.fac{font-variant-numeric:tabular-nums}
+.net{font-weight:700;font-size:1.1rem;font-variant-numeric:tabular-nums}
+.s-b .net{color:var(--blue)}.s-r .net{color:var(--red)}
+.pct{width:56px;display:inline-block}
+.sum{padding:12px 16px}
+.sum b{font-size:1.05rem}
+.sum div{margin:3px 0}
+.m{width:100%}
+.m th,.m td{padding:6px 10px;border-bottom:1px solid var(--soft);text-align:left}
+.ok{color:var(--ok);font-weight:600}.no{color:var(--mute)}
+.scroll{overflow-x:auto}
+
+.pill{display:inline-block;padding:1px 12px;border-radius:999px;font-weight:600;font-size:.9rem}
+.pill.ok{background:var(--okbg);color:var(--ok)}
+.pill.bad{background:var(--redbg);color:var(--red)}
+.rec{margin-top:6px;font-size:.9rem;max-width:480px}
+.rec summary{cursor:pointer;color:var(--blue)}
+.rec ul{margin:4px 0 0;padding-left:18px}
+.rec li{margin:2px 0}
+.rec p{margin:4px 0 0;color:var(--mute)}
+
+.hq{display:flex;justify-content:center;align-items:center;gap:10px;margin:0 0 16px;flex-wrap:wrap}
+.hq label{font-weight:600}
+.hq select{width:auto;min-width:150px;padding:4px 8px}
+.fsnote{padding:12px 16px}
+.fsn-h{margin-bottom:10px;font-size:.95rem}
+.fsn-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:760px){.fsn-cols{grid-template-columns:1fr}}
+.fsn-side .sh{border-radius:4px;margin-bottom:6px}
+.fsn-row{display:grid;grid-template-columns:1fr 96px;gap:8px;align-items:center;margin:4px 0;font-size:.92rem}
+.fsn-add{display:grid;grid-template-columns:1fr 70px auto;gap:6px;margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
+.fsn-row input[type=number],.fsn-add input[type=number]{text-align:center}
+.warnbox{--wb:#c77700;--wbg:#fff5e0;border:2px solid var(--wb);background:var(--wbg);border-radius:8px;padding:14px 18px 10px;margin-top:26px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .warnbox{--wb:#e0a030;--wbg:#3a2c12}}
+:root[data-theme="dark"] .warnbox{--wb:#e0a030;--wbg:#3a2c12}
+.warnbox h2{margin:0 0 2px;font-size:1.2rem;color:var(--wb)}
+.warnbox h3{margin:0 0 8px;font-size:1rem}
+.warnbox ul{margin:0;padding-left:20px;font-size:.95rem}
+.warnbox li{margin:7px 0}
+:root[data-skin="ops"]{--bg:#0b1320;--panel:#121d2e;--ink:#e7eef7;--mute:#8fa3ba;--line:#26384f;--soft:#1d2d42;--head:#172740;--blue:#4da3ff;--red:#ff7a6b;--bluebg:#10294a;--redbg:#3a1f22;--ok:#3ddc97;--okbg:#10372b}
+:root[data-skin="ops"] body{font-family:"IBM Plex Sans Thai",Sarabun,Thonburi,Tahoma,sans-serif;background:radial-gradient(1200px 500px at 50% -120px,#16304f 0,transparent 70%),var(--bg)}
+:root[data-skin="ops"] h1,:root[data-skin="ops"] h2{color:#f2b93b;letter-spacing:.5px}
+:root[data-skin="ops"] .card{border-radius:4px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+:root[data-skin="ops"] .ttl{background:#172740;color:#f2b93b;letter-spacing:.8px;border-bottom:1px solid var(--line);position:relative}
+:root[data-skin="ops"] .ttl::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#f2b93b}
+:root[data-skin="ops"] button{border-radius:3px;background:#172740}
+:root[data-skin="ops"] button:hover{background:#1f3452}
+:root[data-skin="ops"] input,:root[data-skin="ops"] select{border-radius:3px;background:#0d1726}
+:root[data-skin="ops"] select option{background:#121d2e;color:#e7eef7}
+:root[data-skin="ops"] .sum{border-left:4px solid #f2b93b}
+:root[data-skin="ops"] .pill.bad{color:#ff9d92}
+:root[data-skin="ops"] .warnbox{--wb:#f2b93b;--wbg:#2a2210;border-radius:4px}
+:root[data-skin="night"]{--bg:#000;--panel:#0b0101;--ink:#ff4a3a;--mute:#b0322a;--line:#5c1411;--soft:#2c0a08;--head:#1c0504;--blue:#ff5a48;--red:#c63a2d;--bluebg:#220606;--redbg:#150303;--ok:#ff6a58;--okbg:#2e0808;color-scheme:dark;filter:brightness(var(--dim,1))}
+:root[data-skin="night"] body{background:#000}
+:root[data-skin="night"] h1,:root[data-skin="night"] h2{color:#ff4a3a;letter-spacing:.5px}
+:root[data-skin="night"] .card{border-radius:4px;box-shadow:none}
+:root[data-skin="night"] .ttl{background:#1c0504;color:#ff4a3a;letter-spacing:.8px;border-bottom:1px solid var(--line);position:relative}
+:root[data-skin="night"] .ttl::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#ff4a3a}
+:root[data-skin="night"] button{border-radius:3px;background:#1c0504;color:var(--ink)}
+:root[data-skin="night"] button:hover{background:#2a0807}
+:root[data-skin="night"] input,:root[data-skin="night"] select{border-radius:3px;background:#070000}
+:root[data-skin="night"] select option{background:#0b0101;color:#ff4a3a}
+:root[data-skin="night"] .s-b .sh{border-left:4px solid #ff5a48}
+:root[data-skin="night"] .s-r .sh{border-left:4px dashed #c63a2d}
+:root[data-skin="night"] .s-r .net{color:#c63a2d}
+:root[data-skin="night"] .sum{border-left:4px solid #ff4a3a}
+:root[data-skin="night"] .pill.ok{border:1px solid #ff6a58}
+:root[data-skin="night"] .pill.ok::before{content:"\2713 "}
+:root[data-skin="night"] .pill.bad{background:transparent;border:1px dashed #c63a2d;color:#e5503f}
+:root[data-skin="night"] .pill.bad::before{content:"\2715 "}
+:root[data-skin="night"] .warnbox{--wb:#ff4a3a;--wbg:#1a0505;border-radius:4px}
+html .modebar{display:flex;justify-content:center;align-items:center;gap:10px 14px;flex-wrap:wrap;margin:0 0 12px}
+html .modebar .seg2{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+html .modebar button.md{border:0;border-radius:0;padding:5px 16px;background:var(--panel);color:var(--ink);font-size:.92rem}
+html .modebar button.md.on{background:var(--blue);color:var(--bg);font-weight:600}
+html .modebar .dim{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--mute)}
+html .modebar .dim input{width:130px;accent-color:var(--blue);padding:0}
+html .modebar{justify-content:flex-end;gap:6px 8px;margin:0 0 8px}
+html .modebar button.md,html .modebar button.sz2{border:0;border-radius:0;padding:4px 11px;background:var(--panel);color:var(--ink);font-size:.85rem;white-space:nowrap}
+html .modebar button.md.on,html .modebar button.sz2.on{background:var(--blue);color:var(--bg);font-weight:600}
+html .modebar .dim{font-size:.82rem;gap:6px}
+html .modebar .dim input{width:90px}
+:root[data-size="tablet"] main{max-width:860px}
+:root[data-size="mobile"] main{max-width:430px;padding-left:10px;padding-right:10px}
+:root[data-size="mobile"] h1{font-size:1.25rem}
+:root[data-size="mobile"] .pair,:root[data-size="mobile"] .fsn-cols{grid-template-columns:1fr}
+:root[data-size="mobile"] .side+.side{border-left:0;border-top:1px solid var(--line)}
+:root[data-size="mobile"] .side thead{display:none}
+:root[data-size="mobile"] .side table,:root[data-size="mobile"] .side tbody,:root[data-size="mobile"] .side tfoot{display:block}
+:root[data-size="mobile"] .side .rows tr{display:grid;grid-template-columns:repeat(4,1fr);gap:4px 6px;padding:8px 10px;border-bottom:1px solid var(--soft)}
+:root[data-size="mobile"] .side .rows td{display:block;padding:0;min-width:0}
+:root[data-size="mobile"] .side .rows td:nth-child(1){grid-column:1/4;grid-row:1}
+:root[data-size="mobile"] .side .rows td:nth-child(6){grid-column:4;grid-row:1;justify-self:end}
+:root[data-size="mobile"] .side .rows td:nth-child(2){grid-column:1/3;grid-row:2}
+:root[data-size="mobile"] .side .rows td:nth-child(3){grid-column:3;grid-row:2}
+:root[data-size="mobile"] .side .rows td:nth-child(4){grid-column:4;grid-row:2}
+:root[data-size="mobile"] .side .rows td:nth-child(5){grid-column:1/5;grid-row:3;text-align:right}
+:root[data-size="mobile"] .side .rows td:nth-child(n+2)::before{display:block;font-size:.72rem;color:var(--mute);text-align:left}
+:root[data-size="mobile"] .side .rows td:nth-child(2)::before{content:"ขนาด"}
+:root[data-size="mobile"] .side .rows td:nth-child(3)::before{content:"จำนวน"}
+:root[data-size="mobile"] .side .rows td:nth-child(4)::before{content:"ค่า"}
+:root[data-size="mobile"] .side .rows td:nth-child(5)::before{content:"ผลรวม";display:inline;margin-right:8px}
+:root[data-size="mobile"] .side .rows td:nth-child(6)::before{content:none}
+:root[data-size="mobile"] .side tfoot tr{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;padding:6px 12px;border-top:1px solid var(--soft)}
+:root[data-size="mobile"] .side tfoot td{padding:0;border:0}
+:root[data-size="mobile"] .side tfoot td:empty{display:none}
+:root[data-size="mobile"] .side tfoot td.raw,:root[data-size="mobile"] .side tfoot td.net{margin-left:auto}
+:root[data-size="mobile"] .side tfoot tr.addr{border-top:0;padding:8px 10px}
+html .fsnote button.fsn-t{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:transparent;border:0;border-radius:0;padding:0;font:inherit;color:inherit;cursor:pointer}
+.fsn-h.c{margin-bottom:0}
+.sympanel{padding:12px 16px}
+.card.sympanel{background:#fff;color:#16202e}
+.sympanel h3{margin:0 0 8px;font-size:1rem;color:#16202e}
+.sy-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:760px){.sy-cols{grid-template-columns:1fr}}
+:root[data-size="mobile"] .sy-cols{grid-template-columns:1fr}
+.sy-side h4{margin:0 0 6px;font-size:.95rem}
+.sy-side.b h4{color:#1f5fa8}.sy-side.r h4{color:#b23a2f}
+.sy-list{display:flex;flex-wrap:wrap;gap:10px}
+.sy-item{display:flex;flex-direction:column;align-items:center;width:104px;text-align:center;font-size:.78rem;line-height:1.25}
+.sy-item .ech{height:1.15em;font-weight:700;letter-spacing:1px;font-size:.85rem;color:#16202e}
+.sy-item svg{display:block;max-width:100%;height:auto}
+.sy-item .cnt{color:#555}
+.sy-none{color:#777;font-size:.88rem}
+:root[data-skin="night"] .card.sympanel{background:#000;color:#ff4a3a}
+:root[data-skin="night"] .sympanel h3,:root[data-skin="night"] .sy-side h4,:root[data-skin="night"] .sy-item .ech{color:#ff4a3a}
+:root[data-skin="night"] .sy-item .cnt,:root[data-skin="night"] .sy-none{color:#b0322a}
+.nmw{display:flex;align-items:flex-start;gap:4px}
+.nmc{flex:1;min-width:0}
+.grip{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;color:var(--mute);padding:3px 2px 0;font-size:1.05rem;line-height:1.3;letter-spacing:-3px;border-radius:4px}
+.grip:hover,.grip:focus-visible{color:var(--blue);background:var(--head)}
+.rows tr{transition:background .12s}
+.side .rows tr:hover{background:color-mix(in srgb,var(--blue) 9%,transparent)}
+.side .rows tr.hl{background:color-mix(in srgb,var(--blue) 16%,transparent)}
+.side .rows tr.dragging{background:var(--head);box-shadow:0 6px 18px rgba(0,0,0,.35);position:relative;z-index:3;opacity:.92}
+.side .rows .t{font-variant-numeric:tabular-nums;font-weight:600}
+.side th{font-size:.78rem;letter-spacing:.3px;text-transform:uppercase}
+.sy-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.sy-head h3{margin:0}
+.sy-reset{font-size:.82rem;padding:2px 10px;background:#f1f4f8;color:#16202e;border:1px solid #c9d2dc}
+.sy-board{position:relative;min-height:210px;border:1px dashed #c9d2dc;border-radius:10px;background-color:#fbfcfe;background-image:radial-gradient(#d3dbe6 1px,transparent 1px);background-size:18px 18px;overflow:hidden}
+.sy-board .sy-none{position:absolute;left:12px;top:10px}
+.sy-item{position:absolute;width:104px;padding:6px 4px 4px;border-radius:10px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;transition:box-shadow .15s,background .15s}
+.sy-item:hover,.sy-item.hl{background:#e8f0ff;box-shadow:0 3px 12px rgba(30,60,120,.2)}
+.sy-item.drag{cursor:grabbing;background:#fff;box-shadow:0 10px 26px rgba(30,60,120,.35);z-index:5;transition:none}
+.sy-item .nm2{margin-top:2px;font-weight:600}
+:root[data-skin="night"] .sy-board{background-color:#000;background-image:radial-gradient(#3a0b09 1px,transparent 1px);border-color:#5c1411}
+:root[data-skin="night"] .sy-item:hover,:root[data-skin="night"] .sy-item.hl{background:#1c0504;box-shadow:none}
+:root[data-skin="night"] .sy-item.drag{background:#0b0101;box-shadow:0 0 0 1px #ff4a3a}
+:root[data-skin="night"] .sy-reset{background:#1c0504;color:#ff4a3a;border-color:#5c1411}
+:root[data-size="tablet"] .pair{grid-template-columns:1fr}
+:root[data-size="tablet"] .side+.side{border-left:0;border-top:1px solid var(--line)}
+.sy-item .ech{display:flex;align-items:flex-end;justify-content:center;height:16px}
+.ech .bars{display:inline-flex;gap:3px;align-items:flex-end}
+.ech .bars i{display:block;width:2px;height:13px;background:currentColor}
+.side .sy-board{margin:10px 12px 8px;color:#16202e;min-height:160px}
+.sy-board .sy-reset{position:absolute;top:6px;right:6px;z-index:2}
+:root[data-skin="night"] .side .sy-board{color:#ff4a3a}
+html .sy-board button.sy-reset{background:#f1f4f8;color:#16202e;border:1px solid #c9d2dc}
+html .sy-board button.sy-reset:hover{background:#e3e9f1}
+</style>
+</head>
+<body>
+<main>
+<div class="modebar" role="toolbar" aria-label="การแสดงผล">
+<div class="seg2" role="group" aria-label="โหมดแสง"><button class="md" data-k="ops" aria-pressed="true">ปกติ</button><button class="md" data-k="night" aria-pressed="false">กลางคืน (แดง)</button></div>
+<div class="seg2" role="group" aria-label="ขนาดหน้าจอ"><button class="sz2" data-s="mobile" aria-pressed="false">มือถือ</button><button class="sz2" data-s="tablet" aria-pressed="false">แท็บเล็ต</button><button class="sz2" data-s="desktop" aria-pressed="false">คอมพิวเตอร์</button></div>
+<label class="dim" hidden>สว่าง<input type="range" id="dim" min="10" max="100" value="60" aria-label="ความสว่างหน้าจอ"></label>
+</div>
+<h1>การคำนวณค่าอำนาจกำลังรบเปรียบเทียบ</h1>
+<div class="hq"><label for="hq">ฝ่ายเราเป็นหน่วยเหนือขนาด</label><select id="hq"></select></div>
+<div id="groups"></div>
+<div class="card sum" id="sum"></div>
+
+<h2>ประเมินผลเปรียบเทียบข้อมูลการวางแผนขั้นต่ำในอดีต</h2>
+<div class="card scroll"><table class="m"><thead><tr><th>ภารกิจฝ่ายเรา</th><th>เรา : ข้าศึก</th><th>หมายเหตุ</th><th>เทียบกับหน่วยดำเนินกลยุทธ์</th></tr></thead><tbody id="miss"></tbody></table></div>
+<p class="note">หมายเหตุ: FM 5-0, PLANNING AND ORDERS PRODUCTION (MAY 2022), Recommended planning ratios ตาราง 5-4 หน้า 5-29</p>
+<section class="warnbox" role="note" aria-label="คำเตือน">
+<h2>⚠︎ คำเตือน</h2>
+<h3>FM 5-0</h3>
+<ul>
+<li><b>การประเมินกำลังรบเปรียบเทียบ</b> (หน้า 5-26 ถึง 5-27): ทำยาก ต้องใช้ทั้งศิลป์และศาสตร์ ต้องประเมินปัจจัยที่จับต้องได้ (อุปกรณ์ ระบบอาวุธ หน่วย) และจับต้องไม่ได้ (ขวัญ ระดับการฝึก) ตามตัวแปร METT-TC เป็นการประมาณที่รวมทั้งปัจจัยเชิงวัตถุและเชิงอัตวิสัย ไม่ใช่แค่ตัวเลข</li>
+<li><b>ระดับที่เปรียบเทียบ</b> (หน้า 5-26): ประเมินอัตราส่วนกำลังของหน่วยดำเนินกลยุทธ์ต่ำกว่าระดับของตน 2 ระดับ เช่น ระดับกองพลเทียบกองพัน</li>
+<li><b>ข้อห้าม</b> (หน้า 5-26): ห้ามเสนอหนทางปฏิบัติจากการวิเคราะห์อัตราส่วนกำลังเชิงคณิตศาสตร์อย่างเดียว ปัจจัยด้านคนมักสำคัญกว่าจำนวนรถถังหรือปืนใหญ่</li>
+<li><b>อัตราส่วนวางแผน</b> (หน้า 5-28 ถึง 5-29, ตาราง 5-4): ใช้เป็นจุดเริ่มต้น ถ้ากำลังรบเปรียบเทียบไม่ถึงอัตราส่วนที่ยอมรับได้ ผู้วางแผนต้องหาวิธีเพิ่มกำลังให้หน่วย และการเปรียบเทียบกำลังรบเป็นเพียงข้อมูลชั่วคราว</li>
+<li>ต่ำกว่าระดับกองพัน การเปรียบเทียบอย่างหยาบและอาศัยดุลยพินิจมากกว่าตัวเลข (หน้า 7-6)</li>
+</ul>
+</section>
+</main>
+<script>
+const SYM={"n":{"b":{"UCIM---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M25,50 L175,150 M25,150 L175,50\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path><path d=\"M100,50L100,150\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path></svg>","UCIZ---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path><path d=\"M25,50 L175,150 M25,150 L175,50\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path></svg>","UCA----":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path></svg>","UCR----":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M25,150L175,50\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path></svg>","UCRVA--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path><path d=\"M25,150L175,50\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path></svg>","UCVRA--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M60,85 l40,15 40,-15 0,30 -40,-15 -40,15 z\" stroke-width=\"3\" stroke=\"none\" fill=\"black\" ></path><text x=\"100\" y=\"71\" text-anchor=\"middle\" font-size=\"28\" font-family=\"Arial\" font-weight=\"bold\" dominant-baseline=\"middle\" stroke-width=\"3\" stroke=\"none\" fill=\"black\" >A</text></svg>","UCFH---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><circle cx=\"100\" cy=\"100\" r=\"15\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></circle></svg>","UCFHE--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path><g transform=\"translate(20,20)\" ><g transform=\"scale(0.8)\" ><circle cx=\"100\" cy=\"100\" r=\"15\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></circle></g></g></svg>","UCFR---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M100,150 l0,-97 M85,130 l0,-50 M115,130 l0,-50 M85,73 l15,-20 15,20\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path></svg>","UCAA---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M25,150 L100,52 175,150\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path></svg>","U------":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path></svg>"},"r":{"UCIM---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M60,70L140,130M60,130L140,70\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path><path d=\"M100,28L100,172\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path></svg>","UCIZ---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path><path d=\"M60,70L140,130M60,130L140,70\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path></svg>","UCA----":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path></svg>","UCR----":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M60,130L140,70\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path></svg>","UCRVA--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path><path d=\"M60,130L140,70\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path></svg>","UCVRA--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M60,85 l40,15 40,-15 0,30 -40,-15 -40,15 z\" stroke-width=\"3\" stroke=\"none\" fill=\"black\" ></path><text x=\"100\" y=\"71\" text-anchor=\"middle\" font-size=\"28\" font-family=\"Arial\" font-weight=\"bold\" dominant-baseline=\"middle\" stroke-width=\"3\" stroke=\"none\" fill=\"black\" >A</text></svg>","UCFH---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><circle cx=\"100\" cy=\"100\" r=\"15\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></circle></svg>","UCFHE--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path><g transform=\"translate(20,20)\" ><g transform=\"scale(0.8)\" ><circle cx=\"100\" cy=\"100\" r=\"15\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></circle></g></g></svg>","UCFR---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M100,150 l0,-97 M85,130 l0,-50 M115,130 l0,-50 M85,73 l15,-20 15,20\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path></svg>","UCAA---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M60,132 L100,30 140,132\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path></svg>","U------":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path></svg>"}},"d":{"b":{"UCIM---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M25,50 L175,150 M25,150 L175,50\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path><path d=\"M100,50L100,150\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path></svg>","UCIZ---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path><path d=\"M25,50 L175,150 M25,150 L175,50\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path></svg>","UCA----":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path></svg>","UCR----":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M25,150L175,50\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path></svg>","UCRVA--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path><path d=\"M25,150L175,50\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path></svg>","UCVRA--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M60,85 l40,15 40,-15 0,30 -40,-15 -40,15 z\" stroke-width=\"3\" stroke=\"none\" fill=\"#ff4a3a\" ></path><text x=\"100\" y=\"71\" text-anchor=\"middle\" font-size=\"28\" font-family=\"Arial\" font-weight=\"bold\" dominant-baseline=\"middle\" stroke-width=\"3\" stroke=\"none\" fill=\"#ff4a3a\" >A</text></svg>","UCFH---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><circle cx=\"100\" cy=\"100\" r=\"15\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></circle></svg>","UCFHE--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path><g transform=\"translate(20,20)\" ><g transform=\"scale(0.8)\" ><circle cx=\"100\" cy=\"100\" r=\"15\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></circle></g></g></svg>","UCFR---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M100,150 l0,-97 M85,130 l0,-50 M115,130 l0,-50 M85,73 l15,-20 15,20\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path></svg>","UCAA---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M25,150 L100,52 175,150\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path></svg>","U------":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path></svg>"},"r":{"UCIM---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M60,70L140,130M60,130L140,70\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path><path d=\"M100,28L100,172\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path></svg>","UCIZ---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path><path d=\"M60,70L140,130M60,130L140,70\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path></svg>","UCA----":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path></svg>","UCR----":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M60,130L140,70\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path></svg>","UCRVA--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path><path d=\"M60,130L140,70\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path></svg>","UCVRA--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M60,85 l40,15 40,-15 0,30 -40,-15 -40,15 z\" stroke-width=\"3\" stroke=\"none\" fill=\"#ff4a3a\" ></path><text x=\"100\" y=\"71\" text-anchor=\"middle\" font-size=\"28\" font-family=\"Arial\" font-weight=\"bold\" dominant-baseline=\"middle\" stroke-width=\"3\" stroke=\"none\" fill=\"#ff4a3a\" >A</text></svg>","UCFH---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><circle cx=\"100\" cy=\"100\" r=\"15\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></circle></svg>","UCFHE--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path><g transform=\"translate(20,20)\" ><g transform=\"scale(0.8)\" ><circle cx=\"100\" cy=\"100\" r=\"15\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></circle></g></g></svg>","UCFR---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M100,150 l0,-97 M85,130 l0,-50 M115,130 l0,-50 M85,73 l15,-20 15,20\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path></svg>","UCAA---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M60,132 L100,30 140,132\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path></svg>","U------":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path></svg>"}}};
+const UCODE={'ทหารราบ (ยานยนต์)':'UCIM---','ทหารราบ (หุ้มเกราะล้อยาง)':'UCIZ---','ทหารราบ (รถ รสพ.113)':'UCIZ---','ทหารม้ารถถัง (เอ็ม.41)':'UCA----','ทหารม้ารถถัง (เอ็ม 48)':'UCA----','ทหารม้าลาดตระเวน':'UCRVA--','ฮ.โจมตี':'UCVRA--','ทหารราบ (BTR)':'UCIZ---','ทหารราบ (BMP)':'UCIZ---','ทหารม้ารถถัง (T 54/55)':'UCA----','ทหารม้ารถถัง (T 62)':'UCA----','ป.105 มม.':'UCFH---','ป.155 มม. (ลจ.)':'UCFH---','ป.155 มม. (อจ.)':'UCFHE--','ป.122 มม.':'UCFH---','ป.152 มม. (อจ.)':'UCFHE--','ตถ.':'UCAA---','จลก.':'UCFR---','ทหารม้าบรรทุกยานเกราะ (รถ รสพ.113)':'UCRVA--','ค. 60 มม.':'UCFM---','ค. 81 มม.':'UCFMT--','ค. 120 มม.':'UCFMT--','ค. 81 มม. (อจ.)':'UCFMS--','ค. 107 มม. (อจ.)':'UCFMS--','ค. 120 มม. (อจ.)':'UCFMS--','ค. 82 มม.':'UCFMT--','ค. 160 มม.':'UCFMT--','ทหารม้ารถถัง (M60A3 TTS)':'UCA----','ทหารม้ารถถัง (M60A1 RISE)':'UCA----','ทหารม้ารถถัง (VT-4)':'UCA----','ทหารม้ารถถัง (T-84 Oplot)':'UCA----','ทหารม้ารถถัง (Stingray)':'UCA----','ทหารม้ารถถัง (FV101 Scorpion)':'UCA----','ทหารม้ารถถัง (MBT-2000)':'UCA----','ทหารม้ารถถัง (T-72S)':'UCA----','ทหารม้ารถถัง (Type 59D)':'UCA----','ทหารม้ารถถัง (Type 69-II)':'UCA----','ทหารม้ารถถัง (Type 59-II)':'UCA----','ทหารม้ารถถัง (Type 63-I)':'UCA----','ทหารม้ารถถัง (Type 62)':'UCA----','ทหารราบ (BTR-3U)':'UCIZ---','ทหารราบ (BTR-3E1)':'UCIZ---','ทหารราบ (Stryker ICV)':'UCIZ---','ทหารราบ (VN-1)':'UCIZ---','ทหารราบ (Type 85)':'UCIZ---','ทหารราบ (YW531)':'UCIZ---','ทหารราบ (REVA-3)':'UCIM---','ทหารราบ (First Win)':'UCIM---','ทหารราบ (เบา)':'UCI----','ทหารราบ (มาตรฐาน)':'UCI----','ทหารราบ (รสพ. M113)':'UCIZ---','ทหารม้ารถถังเบา 21 (FV101 Scorpion)':'UCA----','ทหารม้ารถถัง (M41A3)':'UCA----','ทหารม้ารถถังถังเบา 32 (Stingray)':'UCA----','ทหารม้ารถถัง (M48A5)':'UCA----','ทหารม้าบรรทุกยานเกราะ (รสพ.M113)':'UCRVA--','ทหารม้าบรรทุกยานเกราะ (รสพ.T-85)':'UCRVA--','ทหารม้ายานเกราะ (VN-1)':'UCRVA--','ทหารม้าลาดตระเวน (V-100)':'UCRVA--','ทหารม้ายานเกราะ (V-150)':'UCRVA--'};
+const UCODE_R={'ทหารม้าลาดตระเวน':'UCR----'};
+const ECH_MARK=['XXXX','XXX','X','<span class="bars"><i></i><i></i><i></i></span>','<span class="bars"><i></i><i></i></span>','<span class="bars"><i></i></span>','\u25cf\u25cf\u25cf','\u25cf\u25cf','\u25cf'];
+const POS={},IW=112,IH=128;
+function renderSyms(){
+ const night=document.documentElement.dataset.skin==='night',set=night?SYM.d:SYM.n;
+ const eh2=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+ const data={b:[],r:[]};
+ ['b','r'].forEach(sd=>document.querySelectorAll('#g-m .side.s-'+sd+' .rows tr').forEach(tr=>{
+  const sel=tr.querySelector('.nm');
+  const name=(sel.value==='__c'?tr.querySelector('.cn').value:sel.value).trim();
+  const cnt=+tr.querySelector('.n').value||0;
+  if(!name||cnt<=0)return;
+  data[sd].push({rid:tr.dataset.rid,name,cnt,sz:+tr.querySelector('.sz').value,code:(sd==='r'&&UCODE_R[name])||UCODE[name]||'U------'});
+ }));
+ document.querySelectorAll('#g-m .sy-board').forEach(bd=>{
+  const sd=bd.dataset.sd,list=data[sd];
+  bd.innerHTML=(list.length?'':'<div class="sy-none">ยังไม่มีหน่วย</div>')+'<button class="sy-reset" type="button" title="ล้างตำแหน่งที่ลากไว้">จัดเรียงใหม่</button>';
+  const W=bd.clientWidth||320,cols=Math.max(1,Math.floor((W-8)/IW));
+  let bottom=0;
+  list.forEach((d,i)=>{
+   const it=document.createElement('div');it.className='sy-item';it.dataset.rid=d.rid;it.title='ลากเพื่อย้ายตำแหน่ง';
+   it.innerHTML='<span class="ech">'+ECH_MARK[d.sz]+'</span>'+(set[sd][d.code]||set[sd]['U------'])+'<span class="nm2">'+eh2(d.name)+'</span><span class="cnt">\u00d7 '+d.cnt+'</span>';
+   const p=POS[d.rid]||{x:8+(i%cols)*IW,y:30+Math.floor(i/cols)*IH};
+   it.style.left=Math.min(Math.max(0,p.x),Math.max(0,W-104))+'px';it.style.top=Math.max(0,p.y)+'px';
+   bd.appendChild(it);bottom=Math.max(bottom,it.offsetTop+it.offsetHeight);
+  });
+  bd.style.height=Math.max(160,bottom+12)+'px';
+ });
+}
+const DB={
+ b:{"ทหารราบ (เบา)":1,"ทหารราบ (มาตรฐาน)":1.2,"ทหารราบ (First Win)":1.1,"ทหารราบ (REVA-3)":1.1,"ทหารราบ (Stryker ICV)":1.5,"ทหารราบ (รสพ. M113)":1.5,"ทหารราบ (BTR-3E1)":1.75,"ทหารม้ารถถังเบา 21 (FV101 Scorpion)":1.8,"ทหารม้ารถถัง (M41A3)":2,"ทหารม้ารถถังถังเบา 32 (Stingray)":2.25,"ทหารม้ารถถัง (M48A5)":2.5,"ทหารม้ารถถัง (M60A1 RISE)":2.5,"ทหารม้ารถถัง (M60A3 TTS)":2.5,"ทหารม้ารถถัง (T-84 Oplot)":2.75,"ทหารม้ารถถัง (VT-4)":2.75,"ทหารม้าบรรทุกยานเกราะ (รสพ.M113)":1.5,"ทหารม้าบรรทุกยานเกราะ (รสพ.T-85)":1.5,"ทหารม้ายานเกราะ (VN-1)":1.75,"ทหารม้าลาดตระเวน (V-100)":1.1,"ทหารม้ายานเกราะ (V-150)":11.75,"ป.105 มม.":1.5,"ป.155 มม. (ลจ.)":2,"ป.155 มม. (อจ.)":2.5,"ค. 60 มม.":0.3,"ค. 120 มม. (อจ.)":1.25,"ค. 81 มม.":0.5,"ค. 81 มม. (อจ.)":0.75,"ค. 107 มม. (อจ.)":1,"ค. 120 มม.":1},
+ r:{"ทหารราบ (ยานยนต์)":1,"ทหารราบ (BTR)":1.5,"ทหารราบ (BTR-3U)":1.5,"ทหารราบ (YW531)":1.5,"ทหารราบ (BMP)":1.7,"ทหารม้ารถถัง (Type 62)":1.5,"ทหารม้ารถถัง (Type 63-I)":1.7,"ทหารม้ารถถัง (T 54/55)":1.75,"ทหารม้ารถถัง (T 62)":2,"ทหารม้ารถถัง (Type 69-II)":2,"ทหารม้ารถถัง (Type 59-II)":2.25,"ทหารม้ารถถัง (Type 59D)":2.5,"ทหารม้ารถถัง (T-72S)":2.5,"ทหารม้ารถถัง (MBT-2000)":2.75,"ทหารม้าลาดตระเวน":1,"ป.122 มม.":2,"ป.152 มม. (อจ.)":2.5,"ค. 60 มม.":0.3,"ค. 81 มม.":0.5,"ค. 82 มม.":0.5,"ค. 120 มม.":1,"ค. 160 มม.":1.25}
+};
+const G=[
+ {id:"m",t:"ดำเนินกลยุทธ์",bp:100,rp:100,
+  b:[["ทหารราบ (รสพ. M113)",10,1.5],["ทหารม้ารถถัง (M48A5)",3,2.5],["ทหารม้าลาดตระเวน (V-100)",1,1.1]],
+  r:[["ทหารราบ (BTR)",6,1.5],["ทหารม้ารถถัง (T 62)",3,2],["ทหารม้าลาดตระเวน",1,1],["ตถ.",1,1]]},
+ {id:"f",t:"หน่วยยิงสนับสนุน",bp:100,rp:100,
+  b:[["ป.155 มม. (อจ.)",5,2.5]],
+  r:[["ป.152 มม. (อจ.)",6,2.5],["จลก.",1,3]]}
+];
+const MISS=[["รั้งหน่วง",1/6,"1 : 6","เข้าตีเร่งด่วน"],["ตั้งรับ",1/3,"1 : 3","ฝ่ายเรามีการเตรียมการหรือที่มั่นดัดแปลง"],["ตั้งรับ",1/2.5,"1 : 2.5","ฝ่ายเราใช้ที่มั่นเร่งด่วน"],["เข้าตี",3,"3 : 1","ข้าศึกมีการเตรียมการหรือที่มั่นดัดแปลง"],["เข้าตี",2.5,"2.5 : 1","ข้าศึกตั้งรับในที่มั่นเร่งด่วน"],["การตีโต้ตอบ",1,"1 : 1","เข้าตีทางปีก"],["ตีเจาะ (หน่วยนำ)",18,"18 : 1","ข้าศึกมีการเตรียมการหรือที่มั่นดัดแปลง"]];
+const esc=s=>String(s).replace(/"/g,'&quot;');
+const f2=x=>{const d=Math.abs(x)<1?1000:100;return String(Math.round((x+1e-9)*d)/d)};
+const n=x=>isFinite(+x)?+x:0;
+const fmt=q=>q>=1?f2(q)+' : 1':'1 : '+f2(1/q);
+
+const SIZES=["กองทัพบก","กองทัพภาค","กองพล","กรม","กองพัน","กองร้อย","หมวด","ตอน","หมู่"];
+const BASE=4;
+let HQ=3;
+const fac=i=>Math.pow(3,BASE-i);
+const defSize=()=>Math.min(HQ+1,SIZES.length-1);
+const sizeOpts=sel=>{let h='';for(let i=defSize();i<SIZES.length;i++)h+='<option value="'+i+'"'+(i===sel?' selected':'')+'>'+SIZES[i]+'</option>';return h};
+function side(g,s){
+ return '<div class="side s-'+s+'"><div class="sh">'+(s==='b'?'ฝ่ายเรา':'ข้าศึก')+'</div>'+(g.id==='m'?'<div class="sy-board" data-sd="'+s+'"></div>':'')+'<table><thead><tr><th>ประเภทหน่วย</th><th style="width:126px">ขนาด</th><th class="c" style="width:58px">จำนวน</th><th class="c" style="width:70px">ค่า</th><th class="c" style="width:64px">ผลรวม</th><th style="width:30px"></th></tr></thead><tbody class="rows"></tbody><tfoot>'+
+ '<tr class="addr"><td colspan="6"><button class="add">+ เพิ่มหน่วย</button></td></tr>'+
+ '<tr><td>รวม</td><td></td><td></td><td></td><td class="c raw"></td><td></td></tr>'+
+ '<tr><td>กำลังรบ <input type="number" min="0" max="100" class="pct" aria-label="กำลังรบ เปอร์เซ็นต์" value="'+g[s+'p']+'"> %</td><td></td><td class="c fac"></td><td></td><td class="c net"></td><td></td></tr></tfoot></table></div>';
+}
+const FIRE=new Set();
+const isFire=k=>/^(ป\.|ค\.)/.test(k)||FIRE.has(k);
+function nameCell(s,r,g){
+ const custom=r[0]&&!(r[0] in DB[s]);
+ return '<td><div class="nmw"><span class="grip" role="button" tabindex="0" title="ลากเพื่อเรียงลำดับ" aria-label="ลากเพื่อเรียงลำดับแถว">\u22ee\u22ee</span><div class="nmc"><select class="nm" aria-label="ประเภทหน่วย"><option value="">เลือกหน่วย</option>'+Object.keys(DB[s]).filter(k=>!g||(g==='f'?isFire(k):!isFire(k))).map(k=>'<option value="'+esc(k)+'"'+(k===r[0]?' selected':'')+'>'+k+'</option>').join('')+'<option value="__c"'+(custom?' selected':'')+'>อื่นๆ (พิมพ์ชื่อเอง)</option></select><input type="text" class="cn" aria-label="ชื่อหน่วย" placeholder="พิมพ์ชื่อหน่วย"'+(custom?'':' hidden')+' value="'+esc(custom?r[0]:'')+'"></div></div></td>';
+}
+const fmtVal=x=>String(Math.round(x*10000)/10000);
+function refreshVal(tr){const v=tr.querySelector('.v'),b=v.dataset.base;v.value=b===''?'':fmtVal(+b*fac(+tr.querySelector('.sz').value))}
+let RID=0;
+function addRow(el,s,r){
+ r=r||["","",""];
+ const sz=r[3]===undefined?defSize():r[3];
+ const tr=document.createElement('tr');tr.dataset.rid='r'+(++RID);
+ tr.innerHTML=nameCell(s,r,el.closest('.card').id==='g-f'?'f':'m')+'<td><select class="sz" aria-label="ขนาดหน่วย">'+sizeOpts(sz)+'</select></td><td><input type="number" min="0" step="1" class="n" aria-label="จำนวน" value="'+r[1]+'"></td><td><input type="number" min="0" step="any" class="v" aria-label="ค่า" data-base="'+r[2]+'"></td><td class="c t"></td><td><button class="del" aria-label="ลบหน่วยนี้" title="ลบหน่วยนี้">\u00d7</button></td>';
+ const v=tr.querySelector('.v');
+ v.addEventListener('input',()=>{const x=v.value;v.dataset.base=x===''?'':String(n(x)/fac(+tr.querySelector('.sz').value))});
+ tr.querySelector('.sz').addEventListener('change',()=>refreshVal(tr));
+ tr.querySelector('.del').onclick=()=>{tr.remove();calc()};
+ el.querySelector('.rows').appendChild(tr);
+ refreshVal(tr);
+}
+document.getElementById('groups').innerHTML=G.map(g=>'<div class="card" id="g-'+g.id+'"><div class="ttl">'+g.t+'</div><div class="pair">'+side(g,'b')+side(g,'r')+'</div></div>'+'<div class="card fsnote" id="'+(g.id==='m'?'mNote':'fsNote')+'"></div>').join('');
+G.forEach(g=>['b','r'].forEach(s=>{
+ const el=document.querySelector('#g-'+g.id+' .s-'+s);
+ g[s].forEach(r=>addRow(el,s,r));
+ el.querySelector('.add').onclick=()=>{addRow(el,s);calc()};
+}));
+document.addEventListener('change',e=>{
+ if(e.target.classList.contains('nm')){
+  const s=e.target.closest('.side').classList.contains('s-b')?'b':'r',tr=e.target.closest('tr'),cn=tr.querySelector('.cn');
+  if(e.target.value==='__c'){cn.hidden=false;cn.focus()}
+  else{cn.hidden=true;const v=DB[s][e.target.value];if(v!==undefined){tr.querySelector('.v').dataset.base=String(v);refreshVal(tr)}}
+  calc();
+ }
+});
+document.addEventListener('input',calc);
+const hqEl=document.getElementById('hq');
+hqEl.innerHTML=SIZES.map((t,i)=>'<option value="'+i+'"'+(i===HQ?' selected':'')+'>'+t+'</option>').join('');
+hqEl.addEventListener('change',()=>{
+ const nh=+hqEl.value,d=nh-HQ;HQ=nh;
+ document.querySelectorAll('.rows tr').forEach(tr=>{
+  const sz=tr.querySelector('.sz'),ni=Math.min(Math.max(+sz.value+d,defSize()),SIZES.length-1);
+  sz.innerHTML=sizeOpts(ni);refreshVal(tr);
+ });
+ calc();
+});
+
+const catRank=k=>/^(พัน\.ร\.|ทหารราบ)/.test(k)?0:/^(พัน\.ถ\.|พัน\.ม\.|ทหารม้า)/.test(k)?1:2;
+function advise(M,t,target){
+ if(M.p<=0)return '<div class="rec"><p>กำลังรบฝ่ายเราเป็น 0% จึงคำนวณข้อเสนอแนะไม่ได้</p></div>';
+ const need=t*M.r-M.b;
+ const cand=Object.entries(DB.b).filter(([k])=>!isFire(k)).sort((a,b)=>a[1]-b[1]||catRank(a[0])-catRank(b[0])).slice(0,3);
+ const df=fac(defSize());
+ const cnt=(v,x)=>Math.ceil(x/(v*df*M.p)-1e-9);
+ const one=cand.map(([k,v])=>'<li>เพิ่ม '+k+' ขนาด'+SIZES[defSize()]+' (ค่า '+f2(v*df)+') อีก <b>'+cnt(v,need)+'</b> หน่วย</li>');
+ const pairs=[];for(let i=0;i<cand.length;i++)for(let j=i+1;j<cand.length;j++)pairs.push([cand[i],cand[j]]);
+ const mix=pairs.map(([a,b])=>'<li>การจัดเฉพาะกิจ: '+a[0]+' อีก <b>'+cnt(a[1],need/2)+'</b> + '+b[0]+' อีก <b>'+cnt(b[1],need/2)+'</b> หน่วย</li>');
+ return '<details class="rec"><summary>ข้อแนะนำ (ขาดกำลังรบสุทธิอีก '+f2(need)+')</summary><ul>'+one.join('')+mix.join('')+'</ul><p>เพื่อให้ถึง '+target+' คำนวณจากหน่วยดำเนินกลยุทธ์ของฝ่ายเรา โดยคิดกำลังรบตามเปอร์เซ็นต์ที่กรอกไว้ ไม่รวมหน่วยยิงสนับสนุน โดยเรียงหน่วยที่ค่าน้อยก่อน (ทหารราบก่อนทหารม้า) เพราะค่ายิ่งมากยิ่งใช้ทรัพยากรมาก</p></details>';
+}
+function calc(){
+ renderSyms();
+ let M=null,lines=[];
+ G.forEach(g=>{
+  const net={};
+  ['b','r'].forEach(s=>{
+   const el=document.querySelector('#g-'+g.id+' .s-'+s);let raw=0;
+   el.querySelectorAll('.rows tr').forEach(tr=>{
+    const c=n(tr.querySelector('.n').value),v=n(tr.querySelector('.v').dataset.base)*fac(+tr.querySelector('.sz').value),x=c*v;
+    tr.querySelector('.t').textContent=(c||v)?f2(x):'';raw+=x;
+   });
+   const p=n(el.querySelector('.pct').value)/100;
+   el.querySelector('.raw').textContent=f2(raw);
+   el.querySelector('.fac').textContent=f2(p);
+   el.querySelector('.net').textContent=f2(raw*p);
+   net[s]=raw*p;
+  });
+  if(g.id==='m')M={b:net.b,r:net.r,p:n(document.querySelector('#g-m .s-b .pct').value)/100};
+  const label=g.id==='m'?'อัตราส่วนหน่วยดำเนินกลยุทธ์':'อัตราส่วนหน่วยยิงสนับสนุน';
+  if(net.b>0&&net.r>0){const q=net.b/net.r;lines.push(label+' &nbsp;'+f2(net.b)+' : '+f2(net.r)+' = <b>'+fmt(q)+'</b>')}
+  else lines.push(label+' &nbsp;<span class="no">(ใส่กำลังของทั้งสองฝ่าย)</span>');
+ });
+ document.getElementById('sum').innerHTML='<div><b>สรุป</b></div>'+lines.map(l=>'<div>'+l+'</div>').join('');
+ document.getElementById('miss').innerHTML=MISS.map(m=>{
+  let st='<span class="no">-</span>',rec='';
+  if(M&&M.r>0){
+   if(M.b/M.r>=m[1])st='<span class="pill ok">ถึงเกณฑ์</span>';
+   else{st='<span class="pill bad">ยังไม่ถึงเกณฑ์</span>';rec=advise(M,m[1],m[2]);}
+  }
+  return '<tr><td>'+m[0]+'</td><td>'+m[2]+'</td><td>'+m[3]+'</td><td>'+st+rec+'</td></tr>';
+ }).join('');
+}
+calc();
+
+
+const eh=x=>String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const NOTES=[{id:'mNote',keep:k=>!isFire(k)},{id:'fsNote',keep:k=>isFire(k)}];
+let savedNotes={};try{savedNotes=JSON.parse(localStorage.getItem('notes:v1')||'{}')||{}}catch(e){}
+NOTES.forEach(N=>{N.el=document.getElementById(N.id);N.open=savedNotes[N.id]!==false;N.FS={b:Object.keys(DB.b).filter(N.keep),r:Object.keys(DB.r).filter(N.keep)}});
+function noteSide(N,sd){
+ return '<div class="fsn-side s-'+sd+'"><div class="sh">'+(sd==='b'?'ฝ่ายเรา':'ข้าศึก')+'</div>'+
+  N.FS[sd].map((k,i)=>'<label class="fsn-row"><span>'+eh(k)+'</span><input type="number" min="0" step="any" data-s="'+sd+'" data-i="'+i+'" aria-label="ค่ากำลังรบ '+esc(k)+'" value="'+DB[sd][k]+'"></label>').join('')+
+  '<div class="fsn-add"><input type="text" class="an" placeholder="เพิ่มประเภทหน่วย" aria-label="ชื่อประเภทหน่วยใหม่"><input type="number" min="0" step="any" class="av" placeholder="ค่า" aria-label="ค่ากำลังรบของประเภทหน่วยใหม่"><button class="aa" data-s="'+sd+'">+ เพิ่ม</button></div></div>';
+}
+function saveNotes(){try{localStorage.setItem('notes:v1',JSON.stringify(Object.fromEntries(NOTES.map(N=>[N.id,N.open]))))}catch(e){}}
+function renderNotes(){NOTES.forEach(N=>{N.el.innerHTML='<div class="fsn-h'+(N.open?'':' c')+'"><button class="fsn-t" aria-expanded="'+N.open+'"><span aria-hidden="true">'+(N.open?'\u25be':'\u25b8')+'</span><span><b>หมายเหตุ</b> ใช้ค่ากำลังรบระดับกองพันเป็นค่าเริ่มต้น</span></button></div>'+(N.open?'<div class="fsn-cols">'+noteSide(N,'b')+noteSide(N,'r')+'</div>':'')})}
+function setBase(sd,name,val){
+ DB[sd][name]=val;
+ document.querySelectorAll('.side.s-'+sd+' .rows tr').forEach(tr=>{if(tr.querySelector('.nm').value===name){tr.querySelector('.v').dataset.base=String(val);refreshVal(tr)}});
+}
+NOTES.forEach(N=>{
+ N.el.addEventListener('input',e=>{
+  const t=e.target;if(t.dataset.i===undefined)return;
+  setBase(t.dataset.s,N.FS[t.dataset.s][+t.dataset.i],n(t.value));calc();
+ });
+ N.el.addEventListener('click',e=>{const tg=e.target.closest('.fsn-t');if(tg){N.open=!N.open;saveNotes();renderNotes();return}
+  const b=e.target.closest('.aa');if(!b)return;
+  const sd=b.dataset.s,box=b.parentNode,nm=box.querySelector('.an'),vl=box.querySelector('.av'),name=nm.value.trim();
+  if(!name){nm.focus();return}
+  if(vl.value===''){vl.focus();return}
+  const isNew=!(name in DB[sd]);
+  setBase(sd,name,n(vl.value));
+  if(!NOTES.some(M=>M.FS[sd].includes(name)))N.FS[sd].push(name);
+  if(N.id==='fsNote')FIRE.add(name);
+  if(isNew)document.querySelectorAll('#g-'+(N.id==='fsNote'?'f':'m')+' .side.s-'+sd+' select.nm').forEach(sel=>{const o=document.createElement('option');o.value=name;o.textContent=name;sel.insertBefore(o,sel.querySelector('option[value="__c"]'))});
+  renderNotes();calc();
+ });
+});
+renderNotes();
+
+
+const rootEl=document.documentElement,dimEl=document.getElementById('dim'),dimLbl=document.querySelector('.modebar .dim'),modeBtns=[...document.querySelectorAll('.modebar .md')];
+function applyDim(){rootEl.style.setProperty('--dim',rootEl.dataset.skin==='night'?(+dimEl.value)/100:1)}
+function setMode(k){
+ rootEl.dataset.skin=k;
+ modeBtns.forEach(b=>{const on=b.dataset.k===k;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
+ dimLbl.hidden=k!=='night';applyDim();renderSyms();
+ try{localStorage.setItem('mode:v1',k)}catch(e){}
+}
+modeBtns.forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.k)));
+dimEl.addEventListener('input',()=>{applyDim();try{localStorage.setItem('dim:v1',dimEl.value)}catch(e){}});
+try{const d=localStorage.getItem('dim:v1');if(d)dimEl.value=d}catch(e){}
+setMode(rootEl.dataset.skin==='night'?'night':'ops');
+
+const sizeBtns=[...document.querySelectorAll('.modebar .sz2')];
+function setSize(k){
+ rootEl.dataset.size=k;
+ sizeBtns.forEach(b=>{const on=b.dataset.s===k;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
+ try{localStorage.setItem('size:v1',k)}catch(e){}
+}
+sizeBtns.forEach(b=>b.addEventListener('click',()=>setSize(b.dataset.s)));
+let size0=null;try{size0=localStorage.getItem('size:v1')}catch(e){}
+if(!['mobile','tablet','desktop'].includes(size0)){const w=window.innerWidth;size0=w<600?'mobile':w<1000?'tablet':'desktop'}
+setSize(size0);
+
+// ---- drag rows to reorder (mouse, touch, or arrow keys on the handle) ----
+document.addEventListener('pointerdown',e=>{
+ const g=e.target.closest&&e.target.closest('.grip');if(!g)return;
+ const tr=g.closest('tr'),body=tr.parentNode;e.preventDefault();
+ g.setPointerCapture(e.pointerId);tr.classList.add('dragging');
+ const mv=ev=>{
+  let prev=tr.previousElementSibling,next=tr.nextElementSibling;
+  while(prev&&ev.clientY<prev.getBoundingClientRect().top+prev.offsetHeight/2){body.insertBefore(prev,next);next=prev;prev=tr.previousElementSibling}
+  while(next&&ev.clientY>next.getBoundingClientRect().top+next.offsetHeight/2){body.insertBefore(next,tr);prev=next;next=tr.nextElementSibling}
+ };
+ const up=()=>{tr.classList.remove('dragging');g.removeEventListener('pointermove',mv);g.removeEventListener('pointerup',up);g.removeEventListener('pointercancel',up);renderSyms()};
+ g.addEventListener('pointermove',mv);g.addEventListener('pointerup',up);g.addEventListener('pointercancel',up);
+});
+document.addEventListener('keydown',e=>{
+ const g=e.target.closest&&e.target.closest('.grip');if(!g||(e.key!=='ArrowUp'&&e.key!=='ArrowDown'))return;
+ e.preventDefault();const tr=g.closest('tr'),body=tr.parentNode;
+ if(e.key==='ArrowUp'&&tr.previousElementSibling)body.insertBefore(tr,tr.previousElementSibling);
+ if(e.key==='ArrowDown'&&tr.nextElementSibling)body.insertBefore(tr.nextElementSibling,tr);
+ g.focus();renderSyms();
+});
+// ---- drag symbols freely inside their board ----
+document.addEventListener('pointerdown',e=>{
+ const it=e.target.closest&&e.target.closest('.sy-item');if(!it)return;
+ const bd=it.parentNode,sx=e.clientX,sy=e.clientY,ox=it.offsetLeft,oy=it.offsetTop;
+ e.preventDefault();it.setPointerCapture(e.pointerId);it.classList.add('drag');
+ const mv=ev=>{
+  const x=Math.min(Math.max(0,ox+ev.clientX-sx),bd.clientWidth-it.offsetWidth),y=Math.max(0,oy+ev.clientY-sy);
+  it.style.left=x+'px';it.style.top=y+'px';
+  const need=y+it.offsetHeight+12;if(need>bd.clientHeight)bd.style.height=need+'px';
+ };
+ const up=()=>{it.classList.remove('drag');POS[it.dataset.rid]={x:it.offsetLeft,y:it.offsetTop};it.removeEventListener('pointermove',mv);it.removeEventListener('pointerup',up);it.removeEventListener('pointercancel',up)};
+ it.addEventListener('pointermove',mv);it.addEventListener('pointerup',up);it.addEventListener('pointercancel',up);
+});
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.sy-reset')){for(const k in POS)delete POS[k];renderSyms()}});
+// ---- hovering a row or a symbol highlights its partner ----
+document.addEventListener('mouseover',e=>{
+ const h=e.target.closest&&e.target.closest('[data-rid]');
+ document.querySelectorAll('.hl').forEach(x=>x.classList.remove('hl'));
+ if(h)document.querySelectorAll('[data-rid="'+h.dataset.rid+'"]').forEach(x=>x.classList.add('hl'));
+});
+</script>
+</body>
+</html>
