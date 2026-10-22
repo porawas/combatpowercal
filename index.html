@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="th" data-skin="ops">
+<head>
+<meta charset="utf-8">
+<script>try{if(localStorage.getItem('mode:v1')==='night')document.documentElement.dataset.skin='night'}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>การคำนวณค่าอำนาจกำลังรบเปรียบเทียบ</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=IBM+Plex+Sans+Thai:wght@400;600;700&display=swap">
+<style>
+:root{--bg:#eef1f4;--panel:#fff;--ink:#1c2733;--mute:#5d6b79;--line:#b9c3cd;--soft:#dde3e9;--head:#dfe6ed;--blue:#1f5fa8;--red:#b23a2f;--bluebg:#e7eff9;--redbg:#faeceb;--ok:#1e7f4b;--okbg:#e0f2e8;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141a21;--panel:#1d252e;--ink:#e6ebf0;--mute:#93a1af;--line:#46535f;--soft:#2c3742;--head:#27323d;--blue:#6aaeee;--red:#ec8579;--bluebg:#1d2d41;--redbg:#3a2522;--ok:#5fcf8f;--okbg:#1b3328}}
+:root[data-theme="dark"]{--bg:#141a21;--panel:#1d252e;--ink:#e6ebf0;--mute:#93a1af;--line:#46535f;--soft:#2c3742;--head:#27323d;--blue:#6aaeee;--red:#ec8579;--bluebg:#1d2d41;--redbg:#3a2522;--ok:#5fcf8f;--okbg:#1b3328}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Sarabun','Noto Sans Thai',Tahoma,sans-serif;line-height:1.5}
+main{max-width:1120px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:1.5rem;margin:0 0 14px;text-align:center}
+h2{font-size:1.1rem;margin:26px 0 8px}
+.note{color:var(--mute);font-size:.9rem;margin:0 0 14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:16px}
+.ttl{background:var(--head);text-align:center;font-weight:700;font-size:1.05rem;padding:8px 12px;border-bottom:1px solid var(--line)}
+.pair{display:grid;grid-template-columns:1fr 1fr}
+.side{padding:0 0 10px}
+.side+.side{border-left:1px solid var(--line)}
+@media(max-width:760px){.pair{grid-template-columns:1fr}.side+.side{border-left:0;border-top:1px solid var(--line)}}
+.sh{padding:6px 12px;font-weight:700}
+.s-b .sh{background:var(--bluebg);color:var(--blue)}
+.s-r .sh{background:var(--redbg);color:var(--red)}
+table{width:100%;border-collapse:collapse}
+th{font-weight:600;font-size:.82rem;color:var(--mute);text-align:left;padding:6px 4px;border-bottom:1px solid var(--soft)}
+th:first-child,td:first-child{padding-left:12px}
+td{padding:4px}
+tbody tr:nth-child(even){background:color-mix(in srgb,var(--head) 35%,transparent)}
+.c{text-align:center}
+input,select{font:inherit;font-size:.92rem;color:var(--ink);background:var(--panel);border:1px solid var(--soft);border-radius:4px;padding:3px 5px;width:100%;min-width:0}
+input[type=number]{text-align:center}
+.cn{margin-top:3px}
+select option{background:var(--panel);color:var(--ink)}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+button{font:inherit;font-size:.88rem;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:4px;padding:2px 10px}
+button:hover{background:var(--head)}
+.del{border:0;background:transparent;color:var(--mute);font-size:1.1rem;padding:0 6px;line-height:1}
+.del:hover{color:var(--red);background:transparent}
+.addr td{padding:8px 4px 6px 12px}
+tfoot td{border-top:1px solid var(--soft)}
+tfoot .addr td{border-top:0}
+.raw,.fac{font-variant-numeric:tabular-nums}
+.net{font-weight:700;font-size:1.1rem;font-variant-numeric:tabular-nums}
+.s-b .net{color:var(--blue)}.s-r .net{color:var(--red)}
+.pct{width:56px;display:inline-block}
+.sum{padding:12px 16px}
+.sum b{font-size:1.05rem}
+.sum div{margin:3px 0}
+.m{width:100%}
+.m th,.m td{padding:6px 10px;border-bottom:1px solid var(--soft);text-align:left}
+.ok{color:var(--ok);font-weight:600}.no{color:var(--mute)}
+.scroll{overflow-x:auto}
+
+.pill{display:inline-block;padding:1px 12px;border-radius:999px;font-weight:600;font-size:.9rem}
+.pill.ok{background:var(--okbg);color:var(--ok)}
+.pill.bad{background:var(--redbg);color:var(--red)}
+.rec{margin-top:6px;font-size:.9rem;max-width:480px}
+.rec summary{cursor:pointer;color:var(--blue)}
+.rec ul{margin:4px 0 0;padding-left:18px}
+.rec li{margin:2px 0}
+.rec p{margin:4px 0 0;color:var(--mute)}
+
+.hq{display:flex;justify-content:center;align-items:center;gap:10px;margin:0 0 16px;flex-wrap:wrap}
+.hq label{font-weight:600}
+.hq select{width:auto;min-width:150px;padding:4px 8px}
+.fsnote{padding:12px 16px}
+.fsn-h{margin-bottom:10px;font-size:.95rem}
+.fsn-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:760px){.fsn-cols{grid-template-columns:1fr}}
+.fsn-side .sh{border-radius:4px;margin-bottom:6px}
+.fsn-row{display:grid;grid-template-columns:1fr 96px;gap:8px;align-items:center;margin:4px 0;font-size:.92rem}
+.fsn-add{display:grid;grid-template-columns:1fr 70px auto;gap:6px;margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
+.fsn-row input[type=number],.fsn-add input[type=number]{text-align:center}
+.warnbox{--wb:#c77700;--wbg:#fff5e0;border:2px solid var(--wb);background:var(--wbg);border-radius:8px;padding:14px 18px 10px;margin-top:26px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .warnbox{--wb:#e0a030;--wbg:#3a2c12}}
+:root[data-theme="dark"] .warnbox{--wb:#e0a030;--wbg:#3a2c12}
+.warnbox h2{margin:0 0 2px;font-size:1.2rem;color:var(--wb)}
+.warnbox h3{margin:0 0 8px;font-size:1rem}
+.warnbox ul{margin:0;padding-left:20px;font-size:.95rem}
+.warnbox li{margin:7px 0}
+:root[data-skin="ops"]{--bg:#0b1320;--panel:#121d2e;--ink:#e7eef7;--mute:#8fa3ba;--line:#26384f;--soft:#1d2d42;--head:#172740;--blue:#4da3ff;--red:#ff7a6b;--bluebg:#10294a;--redbg:#3a1f22;--ok:#3ddc97;--okbg:#10372b}
+:root[data-skin="ops"] body{font-family:"IBM Plex Sans Thai",Sarabun,Thonburi,Tahoma,sans-serif;background:radial-gradient(1200px 500px at 50% -120px,#16304f 0,transparent 70%),var(--bg)}
+:root[data-skin="ops"] h1,:root[data-skin="ops"] h2{color:#f2b93b;letter-spacing:.5px}
+:root[data-skin="ops"] .card{border-radius:4px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+:root[data-skin="ops"] .ttl{background:#172740;color:#f2b93b;letter-spacing:.8px;border-bottom:1px solid var(--line);position:relative}
+:root[data-skin="ops"] .ttl::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#f2b93b}
+:root[data-skin="ops"] button{border-radius:3px;background:#172740}
+:root[data-skin="ops"] button:hover{background:#1f3452}
+:root[data-skin="ops"] input,:root[data-skin="ops"] select{border-radius:3px;background:#0d1726}
+:root[data-skin="ops"] select option{background:#121d2e;color:#e7eef7}
+:root[data-skin="ops"] .sum{border-left:4px solid #f2b93b}
+:root[data-skin="ops"] .pill.bad{color:#ff9d92}
+:root[data-skin="ops"] .warnbox{--wb:#f2b93b;--wbg:#2a2210;border-radius:4px}
+:root[data-skin="night"]{--bg:#000;--panel:#0b0101;--ink:#ff4a3a;--mute:#b0322a;--line:#5c1411;--soft:#2c0a08;--head:#1c0504;--blue:#ff5a48;--red:#c63a2d;--bluebg:#220606;--redbg:#150303;--ok:#ff6a58;--okbg:#2e0808;color-scheme:dark;filter:brightness(var(--dim,1))}
+:root[data-skin="night"] body{background:#000}
+:root[data-skin="night"] h1,:root[data-skin="night"] h2{color:#ff4a3a;letter-spacing:.5px}
+:root[data-skin="night"] .card{border-radius:4px;box-shadow:none}
+:root[data-skin="night"] .ttl{background:#1c0504;color:#ff4a3a;letter-spacing:.8px;border-bottom:1px solid var(--line);position:relative}
+:root[data-skin="night"] .ttl::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#ff4a3a}
+:root[data-skin="night"] button{border-radius:3px;background:#1c0504;color:var(--ink)}
+:root[data-skin="night"] button:hover{background:#2a0807}
+:root[data-skin="night"] input,:root[data-skin="night"] select{border-radius:3px;background:#070000}
+:root[data-skin="night"] select option{background:#0b0101;color:#ff4a3a}
+:root[data-skin="night"] .s-b .sh{border-left:4px solid #ff5a48}
+:root[data-skin="night"] .s-r .sh{border-left:4px dashed #c63a2d}
+:root[data-skin="night"] .s-r .net{color:#c63a2d}
+:root[data-skin="night"] .sum{border-left:4px solid #ff4a3a}
+:root[data-skin="night"] .pill.ok{border:1px solid #ff6a58}
+:root[data-skin="night"] .pill.ok::before{content:"\2713 "}
+:root[data-skin="night"] .pill.bad{background:transparent;border:1px dashed #c63a2d;color:#e5503f}
+:root[data-skin="night"] .pill.bad::before{content:"\2715 "}
+:root[data-skin="night"] .warnbox{--wb:#ff4a3a;--wbg:#1a0505;border-radius:4px}
+html .modebar{display:flex;justify-content:center;align-items:center;gap:10px 14px;flex-wrap:wrap;margin:0 0 12px}
+html .modebar .seg2{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+html .modebar button.md{border:0;border-radius:0;padding:5px 16px;background:var(--panel);color:var(--ink);font-size:.92rem}
+html .modebar button.md.on{background:var(--blue);color:var(--bg);font-weight:600}
+html .modebar .dim{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--mute)}
+html .modebar .dim input{width:130px;accent-color:var(--blue);padding:0}
+html .modebar{justify-content:flex-end;gap:6px 8px;margin:0 0 8px}
+html .modebar button.md,html .modebar button.sz2{border:0;border-radius:0;padding:4px 11px;background:var(--panel);color:var(--ink);font-size:.85rem;white-space:nowrap}
+html .modebar button.md.on,html .modebar button.sz2.on{background:var(--blue);color:var(--bg);font-weight:600}
+html .modebar .dim{font-size:.82rem;gap:6px}
+html .modebar .dim input{width:90px}
+:root[data-size="tablet"] main{max-width:860px}
+:root[data-size="mobile"] main{max-width:430px;padding-left:10px;padding-right:10px}
+:root[data-size="mobile"] h1{font-size:1.25rem}
+:root[data-size="mobile"] .pair,:root[data-size="mobile"] .fsn-cols{grid-template-columns:1fr}
+:root[data-size="mobile"] .side+.side{border-left:0;border-top:1px solid var(--line)}
+:root[data-size="mobile"] .side thead{display:none}
+:root[data-size="mobile"] .side table,:root[data-size="mobile"] .side tbody,:root[data-size="mobile"] .side tfoot{display:block}
+:root[data-size="mobile"] .side .rows tr{display:grid;grid-template-columns:repeat(4,1fr);gap:4px 6px;padding:8px 10px;border-bottom:1px solid var(--soft)}
+:root[data-size="mobile"] .side .rows td{display:block;padding:0;min-width:0}
+:root[data-size="mobile"] .side .rows td:nth-child(1){grid-column:1/4;grid-row:1}
+:root[data-size="mobile"] .side .rows td:nth-child(6){grid-column:4;grid-row:1;justify-self:end}
+:root[data-size="mobile"] .side .rows td:nth-child(2){grid-column:1/3;grid-row:2}
+:root[data-size="mobile"] .side .rows td:nth-child(3){grid-column:3;grid-row:2}
+:root[data-size="mobile"] .side .rows td:nth-child(4){grid-column:4;grid-row:2}
+:root[data-size="mobile"] .side .rows td:nth-child(5){grid-column:1/5;grid-row:3;text-align:right}
+:root[data-size="mobile"] .side .rows td:nth-child(n+2)::before{display:block;font-size:.72rem;color:var(--mute);text-align:left}
+:root[data-size="mobile"] .side .rows td:nth-child(2)::before{content:"ขนาด"}
+:root[data-size="mobile"] .side .rows td:nth-child(3)::before{content:"จำนวน"}
+:root[data-size="mobile"] .side .rows td:nth-child(4)::before{content:"ค่า"}
+:root[data-size="mobile"] .side .rows td:nth-child(5)::before{content:"ผลรวม";display:inline;margin-right:8px}
+:root[data-size="mobile"] .side .rows td:nth-child(6)::before{content:none}
+:root[data-size="mobile"] .side tfoot tr{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;padding:6px 12px;border-top:1px solid var(--soft)}
+:root[data-size="mobile"] .side tfoot td{padding:0;border:0}
+:root[data-size="mobile"] .side tfoot td:empty{display:none}
+:root[data-size="mobile"] .side tfoot td.raw,:root[data-size="mobile"] .side tfoot td.net{margin-left:auto}
+:root[data-size="mobile"] .side tfoot tr.addr{border-top:0;padding:8px 10px}
+html .fsnote button.fsn-t{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:transparent;border:0;border-radius:0;padding:0;font:inherit;color:inherit;cursor:pointer}
+.fsn-h.c{margin-bottom:0}
+.sympanel{padding:12px 16px}
+.card.sympanel{background:#fff;color:#16202e}
+.sympanel h3{margin:0 0 8px;font-size:1rem;color:#16202e}
+.sy-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:760px){.sy-cols{grid-template-columns:1fr}}
+:root[data-size="mobile"] .sy-cols{grid-template-columns:1fr}
+.sy-side h4{margin:0 0 6px;font-size:.95rem}
+.sy-side.b h4{color:#1f5fa8}.sy-side.r h4{color:#b23a2f}
+.sy-list{display:flex;flex-wrap:wrap;gap:10px}
+.sy-item{display:flex;flex-direction:column;align-items:center;width:104px;text-align:center;font-size:.78rem;line-height:1.25}
+.sy-item .ech{height:1.15em;font-weight:700;letter-spacing:1px;font-size:.85rem;color:#16202e}
+.sy-item svg{display:block;max-width:100%;height:auto}
+.sy-item .cnt{color:#555}
+.sy-none{color:#777;font-size:.88rem}
+:root[data-skin="night"] .card.sympanel{background:#000;color:#ff4a3a}
+:root[data-skin="night"] .sympanel h3,:root[data-skin="night"] .sy-side h4,:root[data-skin="night"] .sy-item .ech{color:#ff4a3a}
+:root[data-skin="night"] .sy-item .cnt,:root[data-skin="night"] .sy-none{color:#b0322a}
+.nmw{display:flex;align-items:flex-start;gap:4px}
+.nmc{flex:1;min-width:0}
+.grip{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;color:var(--mute);padding:3px 2px 0;font-size:1.05rem;line-height:1.3;letter-spacing:-3px;border-radius:4px}
+.grip:hover,.grip:focus-visible{color:var(--blue);background:var(--head)}
+.rows tr{transition:background .12s}
+.side .rows tr:hover{background:color-mix(in srgb,var(--blue) 9%,transparent)}
+.side .rows tr.hl{background:color-mix(in srgb,var(--blue) 16%,transparent)}
+.side .rows tr.dragging{background:var(--head);box-shadow:0 6px 18px rgba(0,0,0,.35);position:relative;z-index:3;opacity:.92}
+.side .rows .t{font-variant-numeric:tabular-nums;font-weight:600}
+.side th{font-size:.78rem;letter-spacing:.3px;text-transform:uppercase}
+.sy-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.sy-head h3{margin:0}
+.sy-reset{font-size:.82rem;padding:2px 10px;background:#f1f4f8;color:#16202e;border:1px solid #c9d2dc}
+.sy-board{position:relative;min-height:210px;border:1px dashed #c9d2dc;border-radius:10px;background-color:#fbfcfe;background-image:radial-gradient(#d3dbe6 1px,transparent 1px);background-size:18px 18px;overflow:hidden}
+.sy-board .sy-none{position:absolute;left:12px;top:10px}
+.sy-item{position:absolute;width:104px;padding:6px 4px 4px;border-radius:10px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;transition:box-shadow .15s,background .15s}
+.sy-item:hover,.sy-item.hl{background:#e8f0ff;box-shadow:0 3px 12px rgba(30,60,120,.2)}
+.sy-item.drag{cursor:grabbing;background:#fff;box-shadow:0 10px 26px rgba(30,60,120,.35);z-index:5;transition:none}
+.sy-item .nm2{margin-top:2px;font-weight:600}
+:root[data-skin="night"] .sy-board{background-color:#000;background-image:radial-gradient(#3a0b09 1px,transparent 1px);border-color:#5c1411}
+:root[data-skin="night"] .sy-item:hover,:root[data-skin="night"] .sy-item.hl{background:#1c0504;box-shadow:none}
+:root[data-skin="night"] .sy-item.drag{background:#0b0101;box-shadow:0 0 0 1px #ff4a3a}
+:root[data-skin="night"] .sy-reset{background:#1c0504;color:#ff4a3a;border-color:#5c1411}
+:root[data-size="tablet"] .pair{grid-template-columns:1fr}
+:root[data-size="tablet"] .side+.side{border-left:0;border-top:1px solid var(--line)}
+.sy-item .ech{display:flex;align-items:flex-end;justify-content:center;height:16px}
+.ech .bars{display:inline-flex;gap:3px;align-items:flex-end}
+.ech .bars i{display:block;width:2px;height:13px;background:currentColor}
+.side .sy-board{margin:10px 12px 8px;color:#16202e;min-height:160px}
+.sy-board .sy-reset{position:absolute;top:6px;right:6px;z-index:2}
+:root[data-skin="night"] .side .sy-board{color:#ff4a3a}
+html .sy-board button.sy-reset{background:#f1f4f8;color:#16202e;border:1px solid #c9d2dc}
+html .sy-board button.sy-reset:hover{background:#e3e9f1}
+
+/* Keep the table layout; allow the full selected unit name to wrap. */
+main{max-width:1440px}
+.side table{table-layout:fixed}
+.side td{vertical-align:middle}
+html .nmc select.nm{display:none}
+html button.unit-choice{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:8px 10px;min-height:40px;text-align:left;white-space:normal;line-height:1.5;font:inherit;color:var(--ink);border:1px solid var(--line);background:var(--bg)}
+.unit-name{white-space:normal;overflow-wrap:anywhere;min-width:0}
+.unit-caret{color:var(--mute);flex-shrink:0}
+[hidden]{display:none!important}
+@media(min-width:761px) and (max-width:1199px){.pair{grid-template-columns:1fr}.side+.side{border-left:0;border-top:1px solid var(--line)}}
+
+
+html .nmc input.unit-inline-search{display:block;width:100%;min-width:0;margin-top:6px;padding:8px 10px;min-height:38px;font:inherit;font-size:.88rem;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink)}
+html .nmc input.unit-inline-search:focus{outline:2px solid var(--blue);outline-offset:1px}
+html button.unit-choice{cursor:text}
+.unit-inline-results{margin-top:6px;border:1px solid var(--line);border-radius:5px;overflow:hidden;background:var(--panel)}
+.unit-suggest-heading{padding:7px 9px;font-size:.76rem;color:var(--mute);background:var(--head)}
+html .unit-inline-results button.unit-result{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;padding:9px;text-align:left;white-space:normal;overflow-wrap:anywhere;border:0;border-bottom:1px solid var(--soft);border-radius:0;background:var(--panel);color:var(--ink);font:inherit;font-size:.85rem;line-height:1.5}
+html .unit-inline-results button.unit-result:hover,html .unit-inline-results button.unit-result:focus-visible{background:var(--bluebg);outline:2px solid var(--blue);outline-offset:-2px}
+.unit-result small{color:var(--mute);font-size:.72rem;white-space:nowrap}
+.unit-inline-results .unit-empty{padding:9px;color:var(--mute);font-size:.8rem}
+html .unit-inline-results .unit-custom{color:var(--blue)}
+
+
+html .nmc.bottom-unit-search{width:100%;padding:8px 0}
+html .nmc.bottom-unit-search input.unit-inline-search{margin:0;min-height:42px;border-style:dashed}
+html .unit-choice{display:block;width:100%;padding:7px 0;white-space:normal;overflow-wrap:anywhere;line-height:1.5;color:var(--ink)}
+
+.row-unit-picker{position:relative;border:1px solid var(--line);border-radius:4px;background:var(--bg)}
+html .row-unit-picker .unit-choice{padding:8px 28px 8px 10px;min-height:40px}
+.row-unit-picker::after{content:"⌄";position:absolute;right:10px;top:9px;color:var(--mute);pointer-events:none}
+html .nmc .row-unit-picker select.nm{display:block;position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.row-unit-picker:focus-within{outline:2px solid var(--blue);outline-offset:1px}
+
+.bottom-unit-search .unit-inline-results{max-height:320px;overflow-y:auto;overscroll-behavior:contain}
+
+html button.mission-select{display:flex;align-items:center;gap:8px;text-align:left;white-space:normal;color:var(--ink);font:inherit;padding:9px 12px;min-height:42px;border:1px solid var(--line);border-radius:5px;background:var(--panel);cursor:pointer}
+html button.mission-select[aria-pressed="true"]{background:var(--bluebg);border-color:var(--blue);color:var(--blue);font-weight:700}
+.mission-active{background:var(--bluebg)!important}
+html .mission-cop-row>td{padding:16px!important;text-align:left;white-space:normal}
+.mission-cop{border:1px solid var(--line);border-radius:8px;background:var(--bg);overflow:hidden}
+.cop-heading{padding:18px;display:flex;justify-content:space-between;gap:18px;align-items:center;border-bottom:1px solid var(--line)}
+.cop-eyebrow{font-size:.72rem;color:var(--mute);letter-spacing:1.4px}
+.cop-heading h3{margin:4px 0;font-size:1.2rem;color:var(--ink)}
+.cop-heading p{margin:0;color:var(--mute);font-size:.85rem}
+.cop-ratio{text-align:right;font-size:.85rem;color:var(--mute)}
+.cop-ratio>b{font-size:1.5rem;color:var(--ink);display:block}
+.cop-ratio>span{display:block;margin-top:6px}.cop-ratio strong{color:var(--ink)}
+.cop-sides{display:grid;grid-template-columns:1fr 1fr}
+.cop-side{min-width:0}.cop-side+.cop-side{border-left:1px solid var(--line)}
+.cop-side-title{font-size:1rem;margin:0;padding:10px 16px}
+.cop-b .cop-side-title{background:var(--bluebg);color:var(--blue)}
+.cop-r .cop-side-title{background:var(--redbg);color:var(--red)}
+.cop-group{padding:14px}.cop-group h4{margin:0 0 12px;font-size:.9rem}.cop-group h4 small{float:right;color:var(--mute);font-weight:400}
+.cop-units{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.cop-unit{min-width:0;padding:12px 8px;border:1px solid var(--line);border-radius:7px;background:var(--panel);text-align:center;display:flex;flex-direction:column;align-items:center;gap:5px}
+.cop-unit.hl{border-color:var(--blue)}
+.cop-unit .ech{display:flex;align-items:center;justify-content:center;min-height:18px;color:var(--ink);font-weight:700;font-size:.85rem}
+.cop-symbol{height:62px;display:flex;align-items:center;justify-content:center}
+.cop-unit-name{font-size:.83rem;font-weight:600;line-height:1.5;overflow-wrap:anywhere}
+.cop-count{font-size:.8rem;color:var(--ink)}.cop-unit-strength{font-size:.75rem;color:var(--mute)}
+.cop-footnote{margin:0;padding:12px 18px;border-top:1px solid var(--line);font-size:.78rem;color:var(--mute);line-height:1.7}
+@media(max-width:760px){.cop-sides{grid-template-columns:1fr}.cop-side+.cop-side{border-left:0;border-top:1px solid var(--line)}.cop-heading{flex-direction:column;align-items:flex-start}.cop-ratio{text-align:left}.cop-units{grid-template-columns:repeat(2,minmax(0,1fr))}}
+:root[data-size="mobile"] .cop-sides{grid-template-columns:1fr}
+
+#mission-picture{margin-bottom:20px}
+
+.cop-explanation{padding:18px 20px;border-top:1px solid var(--line);line-height:1.8}
+.cop-explanation h3{margin:0 0 10px;font-size:1.05rem;color:var(--ink)}
+.cop-explanation p{margin:8px 0;font-size:.92rem}
+.cop-explanation .cop-assessment{font-weight:700;color:var(--blue)}
+.cop-explanation .cop-source{font-size:.78rem;color:var(--mute)}
+.cop-source a{color:var(--blue)}
+
+.bos-card>summary{display:flex;gap:12px;align-items:center;padding:16px;cursor:pointer;list-style:none;font-weight:600}
+.bos-card>summary::after{content:"⌄";color:var(--mute)}
+.bos-number{display:grid;place-items:center;width:30px;height:30px;background:var(--head);border-radius:5px;color:var(--blue);flex-shrink:0}
+.bos-comparison{margin-left:auto;color:var(--mute);font-size:.8rem;font-weight:400;white-space:nowrap}
+.bos-description{margin:0;padding:0 18px 14px;color:var(--mute);font-size:.85rem}
+.bos-form-pair{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line)}
+.bos-form-side{padding:18px;min-width:0}.bos-form-side+.bos-form-side{border-left:1px solid var(--line)}
+.bos-form-side h3{margin:0 0 14px;font-size:1rem}
+.bos-friendly{color:var(--blue)}.bos-hostile{color:var(--red)}
+.bos-form-side label{display:block;font-size:.85rem;color:var(--mute);margin-bottom:12px}
+html .bos-form-side input,html .bos-form-side select,html .bos-form-side textarea{display:block;width:100%;margin-top:6px;padding:10px;min-height:42px;font:inherit;border:1px solid var(--line);border-radius:5px;color:var(--ink);background:var(--bg);box-sizing:border-box}
+.bos-form-side textarea{resize:vertical}
+.bos-cop{padding:18px;border-top:1px solid var(--line)}.bos-cop h3{font-size:1rem;margin:0 0 14px}
+.bos-overview-grid{display:grid;gap:12px}.bos-overview-grid article{border:1px solid var(--line);border-radius:6px;background:var(--panel);overflow:hidden}
+.bos-overview-grid h4{margin:0;padding:10px 14px;background:var(--head);font-size:.9rem}
+.bos-overview-pair{display:grid;grid-template-columns:1fr 1fr}.bos-overview-pair>div{padding:12px 14px;min-width:0}.bos-overview-pair>div+div{border-left:1px solid var(--line)}
+.bos-overview-pair p{display:flex;justify-content:space-between;gap:12px;font-size:.8rem;margin:7px 0}.bos-overview-pair p>span{color:var(--mute)}.bos-overview-pair strong{font-weight:400;text-align:right}
+.bos-overview-pair .bos-notes{display:block;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink)}.bos-overview-pair small{display:block;color:var(--mute);font-size:.72rem;margin-top:5px;overflow-wrap:anywhere}
+.bos-overview-result{padding:7px 14px;border-top:1px solid var(--line);color:var(--mute);font-size:.75rem}
+@media(max-width:650px){.bos-form-pair,.bos-overview-pair{grid-template-columns:1fr}.bos-form-side+.bos-form-side,.bos-overview-pair>div+div{border-left:0;border-top:1px solid var(--line)}.bos-card>summary{flex-wrap:wrap}.bos-comparison{white-space:normal}}
+:root[data-size="mobile"] .bos-form-pair,:root[data-size="mobile"] .bos-overview-pair{grid-template-columns:1fr}
+
+
+#bos7-tables{margin-top:34px;padding-top:12px;border-top:1px solid var(--line)}
+.bos7-category>summary{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;font-weight:600;list-style:none}.bos7-category>summary::after{content:"⌄";margin-left:auto;color:var(--mute)}
+.bos7-pair{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line)}.bos7-side{min-width:0;padding:12px}.bos7-side+.bos7-side{border-left:1px solid var(--line)}
+.bos7-side h3{margin:0 0 10px;font-size:1rem;padding:8px 10px}.bos7-b{color:var(--blue);background:var(--bluebg)}.bos7-r{color:var(--red);background:var(--redbg)}
+.bos7-side table{table-layout:fixed}.bos7-side th:nth-child(2){width:110px}.bos7-side th:nth-child(3){width:65px}.bos7-side th:last-child{width:32px}.bos7-side td{vertical-align:middle;padding:8px 4px}
+.bos7-picker{position:relative;border:1px solid var(--line);border-radius:4px;background:var(--bg)}.bos7-selected{display:block;padding:8px 26px 8px 9px;white-space:normal;overflow-wrap:anywhere;line-height:1.5}.bos7-picker::after{content:"⌄";position:absolute;right:8px;top:8px;pointer-events:none;color:var(--mute)}
+html .bos7-picker select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}.bos7-picker:focus-within{outline:2px solid var(--blue)}
+html .bos7-size,html .bos7-count{width:100%;padding:7px;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px}
+.bos7-preview{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:4px 0}.bos7-preview:empty{display:none}.bos7-preview .ech{display:flex;align-items:center;justify-content:center;font-size:.8rem}.bos7-preview small{color:var(--mute)}
+.bos7-add{margin-top:12px}.bos7-delete{padding:3px 6px}
+@media(max-width:1000px){.bos7-pair{grid-template-columns:1fr}.bos7-side+.bos7-side{border-left:0;border-top:1px solid var(--line)}}
+:root[data-size="mobile"] .bos7-pair{grid-template-columns:1fr}
+
+
+.framework-switch{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:7px;margin:0 0 8px;background:var(--panel)}
+html .framework-switch button{padding:8px 24px;border:1px solid transparent;border-radius:5px;color:var(--ink)}
+html .framework-switch button[aria-pressed="true"]{background:var(--bluebg);border-color:var(--blue);color:var(--blue);font-weight:700}
+.framework-note{font-size:.82rem;color:var(--mute);margin:0 0 12px}
+
+.bos7-source-note{font-size:.78rem;margin:4px 0 10px}.bos7-source-note a{color:var(--blue)}
+.bos7-linked-name{display:block;white-space:normal;overflow-wrap:anywhere;line-height:1.5}
+
+#qualitative-comparison{margin-top:34px;border-top:1px solid var(--line);padding-top:12px}
+.quality-heading{display:flex;justify-content:space-between;gap:16px;align-items:baseline}.quality-heading>span{color:var(--mute);font-size:.78rem}
+.quality-scroll{overflow-x:auto}.quality-table{min-width:1250px;table-layout:fixed;width:100%;font-size:.85rem}
+.quality-table thead th{background:var(--head);text-align:center;border:1px solid var(--line);padding:10px 8px;color:var(--ink)}
+.quality-table thead th:first-child{width:140px}.quality-table thead tr:first-child th:nth-last-child(2){width:145px}.quality-table thead tr:first-child th:last-child{width:240px}
+.quality-table tbody th{font-size:.85rem;text-align:left;padding:12px;vertical-align:top;color:var(--ink);border-bottom:1px solid var(--line);font-weight:600;overflow-wrap:anywhere}
+.quality-table td{padding:8px;vertical-align:top;border-bottom:1px solid var(--line);border-left:1px solid var(--soft)}
+html .quality-table textarea,html .quality-table select{display:block;width:100%;min-width:0;box-sizing:border-box;padding:9px;font:inherit;line-height:1.6;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:5px}
+.quality-table textarea{resize:vertical;min-height:100px}.quality-table textarea:focus,.quality-table select:focus{outline:2px solid var(--blue);outline-offset:1px}
+.quality-table thead th.quality-friendly{background:var(--bluebg);color:var(--blue)}.quality-table thead th.quality-hostile{background:var(--redbg);color:var(--red)}
+.quality-table tr[data-advantage="friendly"] select{color:var(--blue);border-color:var(--blue)}.quality-table tr[data-advantage="enemy"] select{color:var(--red);border-color:var(--red)}
+.quality-source{font-size:.78rem;color:var(--mute)}.quality-source a{color:var(--blue)}
+@media(max-width:650px){.quality-heading{display:block}.quality-heading>span{display:block;margin-bottom:12px}}
+
+
+.quality-auto{display:block;font-size:.7rem;font-weight:400;color:var(--blue);margin-top:7px;line-height:1.5}
+.quality-table textarea[readonly]{background:var(--head);color:var(--ink)}
+.quality-table select:disabled{opacity:1;color:var(--ink);-webkit-text-fill-color:var(--ink);cursor:default}
+</style>
+</head>
+<body>
+<main>
+<section id="calculator-view">
+<div class="modebar" role="toolbar" aria-label="การแสดงผล">
+<div class="seg2" role="group" aria-label="โหมดแสง"><button class="md" data-k="ops" aria-pressed="true">ปกติ</button><button class="md" data-k="night" aria-pressed="false">กลางคืน (แดง)</button></div>
+<div class="seg2" role="group" aria-label="ขนาดหน้าจอ"><button class="sz2" data-s="mobile" aria-pressed="false">มือถือ</button><button class="sz2" data-s="tablet" aria-pressed="false">แท็บเล็ต</button><button class="sz2" data-s="desktop" aria-pressed="false">คอมพิวเตอร์</button></div>
+<label class="dim" hidden>สว่าง<input type="range" id="dim" min="10" max="100" value="60" aria-label="ความสว่างหน้าจอ"></label>
+</div>
+<h1>การคำนวณค่าอำนาจกำลังรบเปรียบเทียบ</h1>
+<div class="hq"><label for="hq">ฝ่ายเราเป็นหน่วยเหนือขนาด</label><select id="hq"></select></div>
+<div id="groups"></div>
+<div class="card sum" id="sum"></div>
+
+<h2>ประเมินผลเปรียบเทียบข้อมูลการวางแผนขั้นต่ำในอดีต</h2>
+<div id="mission-picture" hidden></div><p class="note">กดเลือกภารกิจเพื่อแสดง Common Operational Picture ของหน่วยที่เลือกทั้งสองฝ่าย</p>
+<div class="card scroll"><table class="m"><thead><tr><th>ภารกิจฝ่ายเรา</th><th>เรา : ข้าศึก</th><th>หมายเหตุ</th><th>เทียบกับหน่วยดำเนินกลยุทธ์</th></tr></thead><tbody id="miss"></tbody></table></div>
+<p class="note">หมายเหตุ: FM 5-0, PLANNING AND ORDERS PRODUCTION (MAY 2022), Recommended planning ratios ตาราง 5-4 หน้า 5-29</p>
+
+<section id="bos7-tables" aria-label="ตารางหน่วย BOS 7" hidden></section>
+<section id="qualitative-comparison" aria-label="ตารางจุดแข็งและจุดอ่อน" hidden>
+<div class="quality-heading"><h2>ตารางจุดแข็ง–จุดอ่อนฝ่ายเรา / ข้าศึก</h2><span id="quality-save" role="status" aria-live="polite">บันทึกอัตโนมัติในเบราว์เซอร์</span></div>
+<p class="note">การดำเนินกลยุทธ์และการยิงสนับสนุนเชื่อมค่าจากหน่วยด้านบนอัตโนมัติ ส่วนหัวข้ออื่นกรอกข้อประเมินเชิงคุณภาพและเหตุผลประกอบได้</p>
+<div class="card quality-scroll" role="region" aria-label="ตารางเปรียบเทียบเชิงคุณภาพ เลื่อนแนวนอนได้" tabindex="0"><table class="quality-table"><thead><tr><th rowspan="2" scope="col">องค์ประกอบ</th><th colspan="2" scope="colgroup" class="quality-friendly">ฝ่ายเรา</th><th colspan="2" scope="colgroup" class="quality-hostile">ข้าศึก</th><th rowspan="2" scope="col">ความได้เปรียบ</th><th rowspan="2" scope="col">เหตุผล / ข้อมูลอ้างอิง</th></tr><tr><th scope="col">จุดแข็ง</th><th scope="col">จุดอ่อน</th><th scope="col">จุดแข็ง</th><th scope="col">จุดอ่อน</th></tr></thead><tbody id="quality-rows"></tbody></table></div>
+<p class="quality-source">หัวข้ออ้างอิง: <a href="02%20บำรุงความรู้%20MDMP%20.pdf#page=49" target="_blank" rel="noopener">เอกสารบำรุงความรู้ MDMP หน้า 49</a> • แยกจุดแข็งและจุดอ่อนเป็นคนละช่องเพื่อให้กรอกได้สะดวก</p>
+</section>
+</section>
+</main>
+<script>
+const SYM={"n":{"b":{"UCIM---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M25,50 L175,150 M25,150 L175,50\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path><path d=\"M100,50L100,150\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path></svg>","UCIZ---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path><path d=\"M25,50 L175,150 M25,150 L175,50\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path></svg>","UCA----":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path></svg>","UCR----":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M25,150L175,50\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path></svg>","UCRVA--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path><path d=\"M25,150L175,50\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path></svg>","UCVRA--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M60,85 l40,15 40,-15 0,30 -40,-15 -40,15 z\" stroke-width=\"3\" stroke=\"none\" fill=\"black\" ></path><text x=\"100\" y=\"71\" text-anchor=\"middle\" font-size=\"28\" font-family=\"Arial\" font-weight=\"bold\" dominant-baseline=\"middle\" stroke-width=\"3\" stroke=\"none\" fill=\"black\" >A</text></svg>","UCFH---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><circle cx=\"100\" cy=\"100\" r=\"15\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></circle></svg>","UCFHE--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path><g transform=\"translate(20,20)\" ><g transform=\"scale(0.8)\" ><circle cx=\"100\" cy=\"100\" r=\"15\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></circle></g></g></svg>","UCFR---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M100,150 l0,-97 M85,130 l0,-50 M115,130 l0,-50 M85,73 l15,-20 15,20\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path></svg>","UCAA---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M25,150 L100,52 175,150\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path></svg>","U------":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path></svg>","STRYKER":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M25,50 L175,150 M25,150 L175,50\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path><path d=\"M85,55 H115 C130,55 130,80 115,80 H85 C70,80 70,55 85,55 Z\" stroke-width=\"3\" stroke=\"black\" fill=\"none\"></path><circle cx=\"78\" cy=\"136\" r=\"8\" stroke-width=\"3\" stroke=\"black\" fill=\"none\"></circle><circle cx=\"100\" cy=\"136\" r=\"8\" stroke-width=\"3\" stroke=\"black\" fill=\"none\"></circle><circle cx=\"122\" cy=\"136\" r=\"8\" stroke-width=\"3\" stroke=\"black\" fill=\"none\"></circle></svg>"},"r":{"UCIM---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M60,70L140,130M60,130L140,70\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path><path d=\"M100,28L100,172\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path></svg>","UCIZ---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path><path d=\"M60,70L140,130M60,130L140,70\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path></svg>","UCA----":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path></svg>","UCR----":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M60,130L140,70\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path></svg>","UCRVA--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path><path d=\"M60,130L140,70\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path></svg>","UCVRA--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M60,85 l40,15 40,-15 0,30 -40,-15 -40,15 z\" stroke-width=\"3\" stroke=\"none\" fill=\"black\" ></path><text x=\"100\" y=\"71\" text-anchor=\"middle\" font-size=\"28\" font-family=\"Arial\" font-weight=\"bold\" dominant-baseline=\"middle\" stroke-width=\"3\" stroke=\"none\" fill=\"black\" >A</text></svg>","UCFH---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><circle cx=\"100\" cy=\"100\" r=\"15\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></circle></svg>","UCFHE--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path><g transform=\"translate(20,20)\" ><g transform=\"scale(0.8)\" ><circle cx=\"100\" cy=\"100\" r=\"15\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></circle></g></g></svg>","UCFR---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M100,150 l0,-97 M85,130 l0,-50 M115,130 l0,-50 M85,73 l15,-20 15,20\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path></svg>","UCAA---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M60,132 L100,30 140,132\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path></svg>","U------":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path></svg>"}},"d":{"b":{"UCIM---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M25,50 L175,150 M25,150 L175,50\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path><path d=\"M100,50L100,150\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path></svg>","UCIZ---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path><path d=\"M25,50 L175,150 M25,150 L175,50\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path></svg>","UCA----":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path></svg>","UCR----":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M25,150L175,50\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path></svg>","UCRVA--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path><path d=\"M25,150L175,50\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path></svg>","UCVRA--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M60,85 l40,15 40,-15 0,30 -40,-15 -40,15 z\" stroke-width=\"3\" stroke=\"none\" fill=\"#ff4a3a\" ></path><text x=\"100\" y=\"71\" text-anchor=\"middle\" font-size=\"28\" font-family=\"Arial\" font-weight=\"bold\" dominant-baseline=\"middle\" stroke-width=\"3\" stroke=\"none\" fill=\"#ff4a3a\" >A</text></svg>","UCFH---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><circle cx=\"100\" cy=\"100\" r=\"15\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></circle></svg>","UCFHE--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path><g transform=\"translate(20,20)\" ><g transform=\"scale(0.8)\" ><circle cx=\"100\" cy=\"100\" r=\"15\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></circle></g></g></svg>","UCFR---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M100,150 l0,-97 M85,130 l0,-50 M115,130 l0,-50 M85,73 l15,-20 15,20\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path></svg>","UCAA---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M25,150 L100,52 175,150\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path></svg>","U------":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path></svg>","STRYKER":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"63.2\" height=\"43.2\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M25,50 L175,150 M25,150 L175,50\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path><path d=\"M85,55 H115 C130,55 130,80 115,80 H85 C70,80 70,55 85,55 Z\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\"></path><circle cx=\"78\" cy=\"136\" r=\"8\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\"></circle><circle cx=\"100\" cy=\"136\" r=\"8\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\"></circle><circle cx=\"122\" cy=\"136\" r=\"8\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\"></circle></svg>"},"r":{"UCIM---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M60,70L140,130M60,130L140,70\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path><path d=\"M100,28L100,172\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path></svg>","UCIZ---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path><path d=\"M60,70L140,130M60,130L140,70\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path></svg>","UCA----":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path></svg>","UCR----":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M60,130L140,70\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path></svg>","UCRVA--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path><path d=\"M60,130L140,70\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path></svg>","UCVRA--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M60,85 l40,15 40,-15 0,30 -40,-15 -40,15 z\" stroke-width=\"3\" stroke=\"none\" fill=\"#ff4a3a\" ></path><text x=\"100\" y=\"71\" text-anchor=\"middle\" font-size=\"28\" font-family=\"Arial\" font-weight=\"bold\" dominant-baseline=\"middle\" stroke-width=\"3\" stroke=\"none\" fill=\"#ff4a3a\" >A</text></svg>","UCFH---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><circle cx=\"100\" cy=\"100\" r=\"15\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></circle></svg>","UCFHE--":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M125,80 C150,80 150,120 125,120 L75,120 C50,120 50,80 75,80 Z\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path><g transform=\"translate(20,20)\" ><g transform=\"scale(0.8)\" ><circle cx=\"100\" cy=\"100\" r=\"15\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></circle></g></g></svg>","UCFR---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M100,150 l0,-97 M85,130 l0,-50 M115,130 l0,-50 M85,73 l15,-20 15,20\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path></svg>","UCAA---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M60,132 L100,30 140,132\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path></svg>","U------":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"60.8\" height=\"60.8\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path></svg>"}}};
+// Stryker: FM 1-02.2 (ARN40326), table 2-9, printed p.48 (PDF p.60).
+const UCODE={'ทหารราบ (ยานยนต์)':'UCIM---','ทหารราบ (หุ้มเกราะล้อยาง)':'UCIZ---','ทหารราบ (รถ รสพ.113)':'UCIZ---','ทหารม้ารถถัง (เอ็ม.41)':'UCA----','ทหารม้ารถถัง (เอ็ม 48)':'UCA----','ทหารม้าลาดตระเวน':'UCRVA--','ฮ.โจมตี':'UCVRA--','ทหารราบ (BTR)':'UCIZ---','ทหารราบ (BMP)':'UCIZ---','ทหารม้ารถถัง (T 54/55)':'UCA----','ทหารม้ารถถัง (T 62)':'UCA----','ป.105 มม.':'UCFH---','ป.155 มม. (ลจ.)':'UCFH---','ป.155 มม. (อจ.)':'UCFHE--','ป.122 มม.':'UCFH---','ป.152 มม. (อจ.)':'UCFHE--','ตถ.':'UCAA---','จลก.':'UCFR---','ทหารม้าบรรทุกยานเกราะ (รถ รสพ.113)':'UCRVA--','ค. 60 มม.':'UCFM---','ค. 81 มม.':'UCFMT--','ค. 120 มม.':'UCFMT--','ค. 81 มม. (อจ.)':'UCFMS--','ค. 107 มม. (อจ.)':'UCFMS--','ค. 120 มม. (อจ.)':'UCFMS--','ค. 82 มม.':'UCFMT--','ค. 160 มม.':'UCFMT--','ทหารม้ารถถัง (M60A3 TTS)':'UCA----','ทหารม้ารถถัง (M60A1 RISE)':'UCA----','ทหารม้ารถถัง (VT-4)':'UCA----','ทหารม้ารถถัง (T-84 Oplot)':'UCA----','ทหารม้ารถถัง (Stingray)':'UCA----','ทหารม้ารถถัง (FV101 Scorpion)':'UCA----','ทหารม้ารถถัง (MBT-2000)':'UCA----','ทหารม้ารถถัง (T-72S)':'UCA----','ทหารม้ารถถัง (Type 59D)':'UCA----','ทหารม้ารถถัง (Type 69-II)':'UCA----','ทหารม้ารถถัง (Type 59-II)':'UCA----','ทหารม้ารถถัง (Type 63-I)':'UCA----','ทหารม้ารถถัง (Type 62)':'UCA----','ทหารราบ (BTR-3U)':'UCIZ---','ทหารราบ (BTR-3E1)':'UCIZ---','ทหารราบ (Stryker ICV)':'STRYKER','ทหารราบ (VN-1)':'UCIZ---','ทหารราบ (Type 85)':'UCIZ---','ทหารราบ (YW531)':'UCIZ---','ทหารราบ (REVA-3)':'UCIM---','ทหารราบ (First Win)':'UCIM---','ทหารราบ (เบา)':'UCI----','ทหารราบ (มาตรฐาน)':'UCI----','ทหารราบ (รสพ. M113)':'UCIZ---','ทหารม้ารถถังเบา 21 (FV101 Scorpion)':'UCA----','ทหารม้ารถถัง (M41A3)':'UCA----','ทหารม้ารถถังถังเบา 32 (Stingray)':'UCA----','ทหารม้ารถถัง (M48A5)':'UCA----','ทหารม้าบรรทุกยานเกราะ (รสพ.M113)':'UCRVA--','ทหารม้าบรรทุกยานเกราะ (รสพ.T-85)':'UCRVA--','ทหารม้ายานเกราะ (VN-1)':'UCRVA--','ทหารม้าลาดตระเวน (V-100)':'UCRVA--','ทหารม้ายานเกราะ (V-150)':'UCRVA--'};
+const UCODE_R={'ทหารม้าลาดตระเวน':'UCR----'};
+const ECH_MARK=['XXXX','XXX','X','<span class="bars"><i></i><i></i><i></i></span>','<span class="bars"><i></i><i></i></span>','<span class="bars"><i></i></span>','\u25cf\u25cf\u25cf','\u25cf\u25cf','\u25cf'];
+const POS={},IW=112,IH=128;
+function renderSyms(){
+ const night=document.documentElement.dataset.skin==='night',set=night?SYM.d:SYM.n;
+ const eh2=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+ document.querySelectorAll('.sy-board').forEach(bd=>{
+ const sd=bd.dataset.sd,list=[];
+ bd.closest('.side').querySelectorAll('.rows tr').forEach(tr=>{
+  const sel=tr.querySelector('.nm');
+  const name=(sel.value==='__c'?tr.querySelector('.cn').value:sel.value).trim();
+  const cnt=+tr.querySelector('.n').value||0;
+  if(!name||cnt<=0)return;
+  const code=(sd==='r'&&UCODE_R[name])||UCODE[name]||(/^ป\./.test(name)?(/อจ\./.test(name)?'UCFHE--':'UCFH---'):/^ค\./.test(name)?(/อจ\./.test(name)?'UCFMS--':'UCFMT--'):'U------');
+  list.push({rid:tr.dataset.rid,name,cnt,sz:+tr.querySelector('.sz').value,code});
+ });
+  bd.innerHTML=(list.length?'':'<div class="sy-none">ยังไม่มีหน่วย</div>')+'<button class="sy-reset" type="button" title="ล้างตำแหน่งที่ลากไว้">จัดเรียงใหม่</button>';
+  const W=bd.clientWidth||320,cols=Math.max(1,Math.floor((W-8)/IW));
+  let bottom=0;
+  list.forEach((d,i)=>{
+   const it=document.createElement('div');it.className='sy-item';it.dataset.rid=d.rid;it.title='ลากเพื่อย้ายตำแหน่ง';
+   it.innerHTML='<span class="ech">'+ECH_MARK[d.sz]+'</span>'+(set[sd][d.code]||set[sd]['U------'])+'<span class="nm2">'+eh2(d.name)+'</span><span class="cnt">\u00d7 '+d.cnt+'</span>';
+   const p=POS[d.rid]||{x:8+(i%cols)*IW,y:30+Math.floor(i/cols)*IH};
+   it.style.left=Math.min(Math.max(0,p.x),Math.max(0,W-104))+'px';it.style.top=Math.max(0,p.y)+'px';
+   bd.appendChild(it);bottom=Math.max(bottom,it.offsetTop+it.offsetHeight);
+  });
+  bd.style.height=Math.max(160,bottom+12)+'px';
+ });
+}
+const DB={
+ b:{"ทหารราบ (เบา)":1,"ทหารราบ (มาตรฐาน)":1.2,"ทหารราบ (First Win)":1.1,"ทหารราบ (REVA-3)":1.1,"ทหารราบ (Stryker ICV)":1.5,"ทหารราบ (รสพ. M113)":1.5,"ทหารราบ (BTR-3E1)":1.75,"ทหารม้ารถถังเบา 21 (FV101 Scorpion)":1.8,"ทหารม้ารถถัง (M41A3)":2,"ทหารม้ารถถังถังเบา 32 (Stingray)":2.25,"ทหารม้ารถถัง (M48A5)":2.5,"ทหารม้ารถถัง (M60A1 RISE)":2.5,"ทหารม้ารถถัง (M60A3 TTS)":2.5,"ทหารม้ารถถัง (T-84 Oplot)":2.75,"ทหารม้ารถถัง (VT-4)":2.75,"ทหารม้าบรรทุกยานเกราะ (รสพ.M113)":1.5,"ทหารม้าบรรทุกยานเกราะ (รสพ.T-85)":1.5,"ทหารม้ายานเกราะ (VN-1)":1.75,"ทหารม้าลาดตระเวน (V-100)":1.1,"ทหารม้ายานเกราะ (V-150)":1.75,"ป.105 มม. (Mod 56)":1.4,"ป.105 มม. (M618A2)":1.5,"ป.105 มม. (L119)":1.65,"ป.105 มม. (M101A1)":1.7,"ป.155 มม. (M-71 ลจ.)":1.8,"ป.105 มม. (LG1)":1.85,"ป.155 มม. (M198 ลจ.)":1.9,"ป.155 มม. (GHN-45 ลจ.)":2.25,"ป.155 มม. (M109 อจ.)":2.5,"ป.155 มม. (CAESAR อจ.)":2.7,"ป.155 มม. (ATMOS อจ.)":2.8,"ค. 81 มม. (BTR-3 อจ.)":0.75,"ค. 81 มม. (M125A3 อจ.)":0.85,"ค. 107 มม. (M106A3 อจ.)":1,"ค. 120 มม. (BTR-3 อจ.)":1.15,"ค. 120 มม. (Cardom อจ.)":1.15,"ค. 120 มม. (M1064A3 อจ.)":1.3},
+ r:{"ทหารราบ (ยานยนต์)":1,"ทหารราบ (BTR)":1.5,"ทหารราบ (BTR-3U)":1.5,"ทหารราบ (YW531)":1.5,"ทหารราบ (BMP)":1.7,"ทหารม้ารถถัง (Type 62)":1.5,"ทหารม้ารถถัง (Type 63-I)":1.7,"ทหารม้ารถถัง (T 54/55)":1.75,"ทหารม้ารถถัง (T 62)":2,"ทหารม้ารถถัง (Type 69-II)":2,"ทหารม้ารถถัง (Type 59-II)":2.25,"ทหารม้ารถถัง (Type 59D)":2.5,"ทหารม้ารถถัง (T-72S)":2.5,"ทหารม้ารถถัง (MBT-2000)":2.75,"ทหารม้าลาดตระเวน":1,"ป.122 มม. (M-30)":1.45,"ป.122 มม. (Type 54)":1.45,"ป.122 มม. (2S1 อจ.)":1.85,"ป.122 มม. (D-30)":2.05,"ป.152 มม. (Type 66 ลจ.)":2.3,"ป.130 มม. (M-46)":2.55,"ป.130 มม. (Type 59-1)":2.55,"ป.155 มม. (Nora B-52 อจ.)":2.7,"ป.155 มม. (SH1 อจ.)":2.7,"ค. 60 มม. (BA-100 / Type 63)":0.5,"ค. 82 มม. (M-37)":0.5,"ค. 82 มม. (Type 67)":0.5,"ค. 81 มม. (BA-90)":0.7,"ค. 120 มม. (M-43)":1,"ค. 120 มม. (Type 53 / 55 / BA-97)":1,"ค. 160 มม. (Type 56 / M-160)":1.05}
+};
+const G=[
+ {id:"m",t:"ดำเนินกลยุทธ์",bp:100,rp:100,
+  b:[["ทหารราบ (รสพ. M113)",10,1.5],["ทหารม้ารถถัง (M48A5)",3,2.5],["ทหารม้าลาดตระเวน (V-100)",1,1.1]],
+  r:[["ทหารราบ (BTR)",6,1.5],["ทหารม้ารถถัง (T 62)",3,2],["ทหารม้าลาดตระเวน",1,1],["ตถ.",1,1]]},
+ {id:"f",t:"หน่วยยิงสนับสนุน",bp:100,rp:100,
+  b:[["ป.155 มม. (M109 อจ.)",1,2.5],["ป.155 มม. (CAESAR อจ.)",1,2.7]],
+  r:[["ป.122 มม. (D-30)",1,2.05],["ป.155 มม. (SH1 อจ.)",1,2.7]]}
+];
+const MISS=[["รั้งหน่วง",1/6,"1 : 6","เข้าตีเร่งด่วน"],["ตั้งรับ",1/3,"1 : 3","ฝ่ายเรามีการเตรียมการหรือที่มั่นดัดแปลง"],["ตั้งรับ",1/2.5,"1 : 2.5","ฝ่ายเราใช้ที่มั่นเร่งด่วน"],["เข้าตี",3,"3 : 1","ข้าศึกมีการเตรียมการหรือที่มั่นดัดแปลง"],["เข้าตี",2.5,"2.5 : 1","ข้าศึกตั้งรับในที่มั่นเร่งด่วน"],["การตีโต้ตอบ",1,"1 : 1","เข้าตีทางปีก"],["ตีเจาะ (หน่วยนำ)",18,"18 : 1","ข้าศึกมีการเตรียมการหรือที่มั่นดัดแปลง"]];
+let selectedMission=0;
+const esc=s=>String(s).replace(/"/g,'&quot;');
+const f2=x=>{const d=Math.abs(x)<1?1000:100;return String(Math.round((x+1e-9)*d)/d)};
+const n=x=>isFinite(+x)?+x:0;
+const fmt=q=>q>=1?f2(q)+' : 1':'1 : '+f2(1/q);
+
+const SIZES=["กองทัพบก","กองทัพภาค","กองพล","กรม","กองพัน","กองร้อย","หมวด","ตอน","หมู่"];
+const BASE=4;
+let HQ=3;
+const fac=i=>Math.pow(3,BASE-i);
+const defSize=()=>Math.min(HQ+1,SIZES.length-1);
+const sizeOpts=sel=>{let h='';for(let i=defSize();i<SIZES.length;i++)h+='<option value="'+i+'"'+(i===sel?' selected':'')+'>'+SIZES[i]+'</option>';return h};
+function side(g,s){
+ return '<div class="side s-'+s+'"><div class="sh">'+(s==='b'?'ฝ่ายเรา':'ข้าศึก')+'</div>'+'<div class="sy-board" data-sd="'+s+'"></div>'+'<table><thead><tr><th>ประเภทหน่วย</th><th style="width:126px">ขนาด</th><th class="c" style="width:58px">จำนวน</th><th class="c" style="width:70px">ค่า</th><th class="c" style="width:64px">ผลรวม</th><th style="width:30px"></th></tr></thead><tbody class="rows"></tbody><tfoot>'+
+ '<tr class="addr"><td colspan="6"><button class="add">+ เพิ่มหน่วย</button></td></tr>'+
+ '<tr><td>รวม</td><td></td><td></td><td></td><td class="c raw"></td><td></td></tr>'+
+ '<tr><td>กำลังรบ <input type="number" min="0" max="100" class="pct" aria-label="กำลังรบ เปอร์เซ็นต์" value="'+g[s+'p']+'"> %</td><td></td><td class="c fac"></td><td></td><td class="c net"></td><td></td></tr></tfoot></table></div>';
+}
+const FIRE=new Set();
+const isFire=k=>/^(ป\.|ค\.)/.test(k)||FIRE.has(k);
+function nameCell(s,r,g){
+ const custom=r[0]&&!(r[0] in DB[s]);
+ return '<td><div class="nmw"><span class="grip" role="button" tabindex="0" title="ลากเพื่อเรียงลำดับ" aria-label="ลากเพื่อเรียงลำดับแถว">\u22ee\u22ee</span><div class="nmc"><select class="nm" aria-label="ประเภทหน่วย"><option value="">เลือกหน่วย</option>'+Object.keys(DB[s]).filter(k=>!g||(g==='f'?isFire(k):!isFire(k))).map(k=>'<option value="'+esc(k)+'"'+(k===r[0]?' selected':'')+'>'+k+'</option>').join('')+'<option value="__c"'+(custom?' selected':'')+'>อื่นๆ</option></select><input type="text" class="cn" aria-label="ชื่อหน่วย" placeholder="พิมพ์ชื่อหน่วย"'+(custom?'':' hidden')+' value="'+esc(custom?r[0]:'')+'"></div></div></td>';
+}
+const fmtVal=x=>String(Math.round(x*10000)/10000);
+function refreshVal(tr){const v=tr.querySelector('.v'),b=v.dataset.base;v.value=b===''?'':fmtVal(+b*fac(+tr.querySelector('.sz').value))}
+let RID=0;
+function addRow(el,s,r){
+ r=r||["","",""];
+ const sz=r[3]===undefined?defSize():r[3];
+ const tr=document.createElement('tr');tr.dataset.rid='r'+(++RID);
+ tr.innerHTML=nameCell(s,r,el.closest('.card').id==='g-f'?'f':'m')+'<td><select class="sz" aria-label="ขนาดหน่วย">'+sizeOpts(sz)+'</select></td><td><input type="number" min="0" step="1" class="n" aria-label="จำนวน" value="'+r[1]+'"></td><td><input type="number" min="0" step="any" class="v" aria-label="ค่า" data-base="'+r[2]+'"></td><td class="c t"></td><td><button class="del" aria-label="ลบหน่วยนี้" title="ลบหน่วยนี้">\u00d7</button></td>';
+ const v=tr.querySelector('.v');
+ v.addEventListener('input',()=>{const x=v.value;v.dataset.base=x===''?'':String(n(x)/fac(+tr.querySelector('.sz').value))});
+ tr.querySelector('.sz').addEventListener('change',()=>refreshVal(tr));
+ tr.querySelector('.del').onclick=()=>{tr.remove();calc()};
+ el.querySelector('.rows').appendChild(tr);
+ setupUnitChoice(tr);
+ refreshVal(tr);
+}
+document.getElementById('groups').innerHTML=G.map(g=>'<div class="card" id="g-'+g.id+'"><div class="ttl">'+g.t+'</div><div class="pair">'+side(g,'b')+side(g,'r')+'</div></div>'+'<div class="card fsnote" id="'+(g.id==='m'?'mNote':'fsNote')+'"></div>').join('');
+G.forEach(g=>['b','r'].forEach(s=>{
+ const el=document.querySelector('#g-'+g.id+' .s-'+s);
+ g[s].forEach(r=>addRow(el,s,r));
+ setupBottomSearch(el,s);
+}));
+document.addEventListener('change',e=>{
+ if(e.target.classList.contains('nm')){
+  const s=e.target.closest('.side').classList.contains('s-b')?'b':'r',tr=e.target.closest('tr'),cn=tr.querySelector('.cn');
+  if(e.target.value==='__c'){cn.hidden=false;cn.focus()}
+  else{cn.hidden=true;const v=DB[s][e.target.value];if(v!==undefined){tr.querySelector('.v').dataset.base=String(v);refreshVal(tr)}}
+  calc();
+ }
+});
+document.addEventListener('input',calc);
+const hqEl=document.getElementById('hq');
+hqEl.innerHTML=SIZES.map((t,i)=>'<option value="'+i+'"'+(i===HQ?' selected':'')+'>'+t+'</option>').join('');
+hqEl.addEventListener('change',()=>{
+ const nh=+hqEl.value,d=nh-HQ;HQ=nh;
+ document.querySelectorAll('.rows tr').forEach(tr=>{
+  const sz=tr.querySelector('.sz'),ni=Math.min(Math.max(+sz.value+d,defSize()),SIZES.length-1);
+  sz.innerHTML=sizeOpts(ni);refreshVal(tr);
+ });
+ calc();
+});
+
+const catRank=k=>/^(พัน\.ร\.|ทหารราบ)/.test(k)?0:/^(พัน\.ถ\.|พัน\.ม\.|ทหารม้า)/.test(k)?1:2;
+function advise(M,t,target){
+ if(M.p<=0)return '<div class="rec"><p>กำลังรบฝ่ายเราเป็น 0% จึงคำนวณข้อเสนอแนะไม่ได้</p></div>';
+ const need=t*M.r-M.b;
+ const cand=Object.entries(DB.b).filter(([k])=>!isFire(k)).sort((a,b)=>a[1]-b[1]||catRank(a[0])-catRank(b[0])).slice(0,3);
+ const df=fac(defSize());
+ const cnt=(v,x)=>Math.ceil(x/(v*df*M.p)-1e-9);
+ const one=cand.map(([k,v])=>'<li>เพิ่ม '+k+' ขนาด'+SIZES[defSize()]+' (ค่า '+f2(v*df)+') อีก <b>'+cnt(v,need)+'</b> หน่วย</li>');
+ const pairs=[];for(let i=0;i<cand.length;i++)for(let j=i+1;j<cand.length;j++)pairs.push([cand[i],cand[j]]);
+ const mix=pairs.map(([a,b])=>'<li>การจัดเฉพาะกิจ: '+a[0]+' อีก <b>'+cnt(a[1],need/2)+'</b> + '+b[0]+' อีก <b>'+cnt(b[1],need/2)+'</b> หน่วย</li>');
+ return '<details class="rec"><summary>ข้อแนะนำ (ขาดกำลังรบสุทธิอีก '+f2(need)+')</summary><ul>'+one.join('')+mix.join('')+'</ul><p>เพื่อให้ถึง '+target+' คำนวณจากหน่วยดำเนินกลยุทธ์ของฝ่ายเรา โดยคิดกำลังรบตามเปอร์เซ็นต์ที่กรอกไว้ ไม่รวมหน่วยยิงสนับสนุน โดยเรียงหน่วยที่ค่าน้อยก่อน (ทหารราบก่อนทหารม้า) เพราะค่ายิ่งมากยิ่งใช้ทรัพยากรมาก</p></details>';
+}
+function calc(){
+ document.querySelectorAll('.unit-choice').forEach(button=>{
+  const box=button.closest('.nmc'),sel=box.querySelector('.nm');
+  button.querySelector('.unit-name').textContent=sel.value==='__c'?(box.querySelector('.cn').value||'อื่นๆ'):(sel.selectedOptions[0]?.textContent||'เลือกหน่วย');
+ });
+ renderSyms();
+ let M=null,lines=[];
+ G.forEach(g=>{
+  const net={};
+  ['b','r'].forEach(s=>{
+   const el=document.querySelector('#g-'+g.id+' .s-'+s);let raw=0;
+   el.querySelectorAll('.rows tr').forEach(tr=>{
+    const c=n(tr.querySelector('.n').value),v=n(tr.querySelector('.v').dataset.base)*fac(+tr.querySelector('.sz').value),x=c*v;
+    tr.querySelector('.t').textContent=(c||v)?f2(x):'';raw+=x;
+   });
+   const p=n(el.querySelector('.pct').value)/100;
+   el.querySelector('.raw').textContent=f2(raw);
+   el.querySelector('.fac').textContent=f2(p);
+   el.querySelector('.net').textContent=f2(raw*p);
+   net[s]=raw*p;
+  });
+  if(g.id==='m')M={b:net.b,r:net.r,p:n(document.querySelector('#g-m .s-b .pct').value)/100};
+  const label=g.id==='m'?'อัตราส่วนหน่วยดำเนินกลยุทธ์':'อัตราส่วนหน่วยยิงสนับสนุน';
+  if(net.b>0&&net.r>0){const q=net.b/net.r;lines.push(label+' &nbsp;'+f2(net.b)+' : '+f2(net.r)+' = <b>'+fmt(q)+'</b>')}
+  else lines.push(label+' &nbsp;<span class="no">(ใส่กำลังของทั้งสองฝ่าย)</span>');
+ });
+ document.getElementById('sum').innerHTML='<div><b>สรุป</b></div>'+lines.map(l=>'<div>'+l+'</div>').join('');
+ document.getElementById('miss').innerHTML=MISS.map((m,i)=>{
+  let st='<span class="no">-</span>',rec='';
+  if(M&&M.r>0){
+   if(M.b/M.r>=m[1])st='<span class="pill ok">ถึงเกณฑ์</span>';
+   else{st='<span class="pill bad">ยังไม่ถึงเกณฑ์</span>';rec=advise(M,m[1],m[2]);}
+  }
+  return '<tr class="'+(selectedMission===i?'mission-active':'')+'"><td><button type="button" class="mission-select" data-mission="'+i+'" aria-pressed="'+(selectedMission===i)+'" aria-label="เลือกภารกิจ '+m[0]+' '+m[2]+'">'+(selectedMission===i?'● ':'○ ')+m[0]+'</button></td><td>'+m[2]+'</td><td>'+m[3]+'</td><td>'+st+rec+'</td></tr>';
+ }).join('');
+ const picture=document.getElementById('mission-picture');
+ picture.hidden=selectedMission===null;
+ picture.innerHTML=selectedMission===null?'':missionCOP(MISS[selectedMission],M);
+ refreshBos7Sources();
+ syncUnitQuality();
+}
+calc();
+
+
+const eh=x=>String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const NOTES=[{id:'mNote',keep:k=>!isFire(k)},{id:'fsNote',keep:k=>isFire(k)}];
+let savedNotes={};try{savedNotes=JSON.parse(localStorage.getItem('notes:v1')||'{}')||{}}catch(e){}
+NOTES.forEach(N=>{N.el=document.getElementById(N.id);N.open=savedNotes[N.id]!==false;N.FS={b:Object.keys(DB.b).filter(N.keep),r:Object.keys(DB.r).filter(N.keep)}});
+function noteSide(N,sd){
+ return '<div class="fsn-side s-'+sd+'"><div class="sh">'+(sd==='b'?'ฝ่ายเรา':'ข้าศึก')+'</div>'+
+  N.FS[sd].map((k,i)=>'<label class="fsn-row"><span>'+eh(k)+'</span><input type="number" min="0" step="any" data-s="'+sd+'" data-i="'+i+'" aria-label="ค่ากำลังรบ '+esc(k)+'" value="'+DB[sd][k]+'"></label>').join('')+
+  '<div class="fsn-add"><input type="text" class="an" placeholder="เพิ่มประเภทหน่วย" aria-label="ชื่อประเภทหน่วยใหม่"><input type="number" min="0" step="any" class="av" placeholder="ค่า" aria-label="ค่ากำลังรบของประเภทหน่วยใหม่"><button class="aa" data-s="'+sd+'">+ เพิ่ม</button></div></div>';
+}
+function saveNotes(){try{localStorage.setItem('notes:v1',JSON.stringify(Object.fromEntries(NOTES.map(N=>[N.id,N.open]))))}catch(e){}}
+function renderNotes(){NOTES.forEach(N=>{N.el.innerHTML='<div class="fsn-h'+(N.open?'':' c')+'"><button class="fsn-t" aria-expanded="'+N.open+'"><span aria-hidden="true">'+(N.open?'\u25be':'\u25b8')+'</span><span><b>หมายเหตุ</b> ใช้ค่ากำลังรบระดับกองพันเป็นค่าเริ่มต้น</span></button></div>'+(N.open?'<div class="fsn-cols">'+noteSide(N,'b')+noteSide(N,'r')+'</div>':'')})}
+function setBase(sd,name,val){
+ DB[sd][name]=val;
+ document.querySelectorAll('.side.s-'+sd+' .rows tr').forEach(tr=>{if(tr.querySelector('.nm').value===name){tr.querySelector('.v').dataset.base=String(val);refreshVal(tr)}});
+}
+NOTES.forEach(N=>{
+ N.el.addEventListener('input',e=>{
+  const t=e.target;if(t.dataset.i===undefined)return;
+  setBase(t.dataset.s,N.FS[t.dataset.s][+t.dataset.i],n(t.value));calc();
+ });
+ N.el.addEventListener('click',e=>{const tg=e.target.closest('.fsn-t');if(tg){N.open=!N.open;saveNotes();renderNotes();return}
+  const b=e.target.closest('.aa');if(!b)return;
+  const sd=b.dataset.s,box=b.parentNode,nm=box.querySelector('.an'),vl=box.querySelector('.av'),name=nm.value.trim();
+  if(!name){nm.focus();return}
+  if(vl.value===''){vl.focus();return}
+  const isNew=!(name in DB[sd]);
+  setBase(sd,name,n(vl.value));
+  if(!NOTES.some(M=>M.FS[sd].includes(name)))N.FS[sd].push(name);
+  if(N.id==='fsNote')FIRE.add(name);
+  if(isNew)document.querySelectorAll('#g-'+(N.id==='fsNote'?'f':'m')+' .side.s-'+sd+' select.nm').forEach(sel=>{const o=document.createElement('option');o.value=name;o.textContent=name;sel.insertBefore(o,sel.querySelector('option[value="__c"]'))});
+  renderNotes();calc();
+ });
+});
+renderNotes();
+
+
+const rootEl=document.documentElement,dimEl=document.getElementById('dim'),dimLbl=document.querySelector('.modebar .dim'),modeBtns=[...document.querySelectorAll('.modebar .md')];
+function applyDim(){rootEl.style.setProperty('--dim',rootEl.dataset.skin==='night'?(+dimEl.value)/100:1)}
+function setMode(k){
+ rootEl.dataset.skin=k;
+ modeBtns.forEach(b=>{const on=b.dataset.k===k;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
+ dimLbl.hidden=k!=='night';applyDim();renderSyms();
+ try{localStorage.setItem('mode:v1',k)}catch(e){}
+}
+modeBtns.forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.k)));
+dimEl.addEventListener('input',()=>{applyDim();try{localStorage.setItem('dim:v1',dimEl.value)}catch(e){}});
+try{const d=localStorage.getItem('dim:v1');if(d)dimEl.value=d}catch(e){}
+setMode(rootEl.dataset.skin==='night'?'night':'ops');
+
+const sizeBtns=[...document.querySelectorAll('.modebar .sz2')];
+function setSize(k){
+ rootEl.dataset.size=k;
+ sizeBtns.forEach(b=>{const on=b.dataset.s===k;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
+ try{localStorage.setItem('size:v1',k)}catch(e){}
+}
+sizeBtns.forEach(b=>b.addEventListener('click',()=>setSize(b.dataset.s)));
+let size0=null;try{size0=localStorage.getItem('size:v1')}catch(e){}
+if(!['mobile','tablet','desktop'].includes(size0)){const w=window.innerWidth;size0=w<600?'mobile':w<1000?'tablet':'desktop'}
+setSize(size0);
+
+// ---- drag rows to reorder (mouse, touch, or arrow keys on the handle) ----
+document.addEventListener('pointerdown',e=>{
+ const g=e.target.closest&&e.target.closest('.grip');if(!g)return;
+ const tr=g.closest('tr'),body=tr.parentNode;e.preventDefault();
+ g.setPointerCapture(e.pointerId);tr.classList.add('dragging');
+ const mv=ev=>{
+  let prev=tr.previousElementSibling,next=tr.nextElementSibling;
+  while(prev&&ev.clientY<prev.getBoundingClientRect().top+prev.offsetHeight/2){body.insertBefore(prev,next);next=prev;prev=tr.previousElementSibling}
+  while(next&&ev.clientY>next.getBoundingClientRect().top+next.offsetHeight/2){body.insertBefore(next,tr);prev=next;next=tr.nextElementSibling}
+ };
+ const up=()=>{tr.classList.remove('dragging');g.removeEventListener('pointermove',mv);g.removeEventListener('pointerup',up);g.removeEventListener('pointercancel',up);renderSyms()};
+ g.addEventListener('pointermove',mv);g.addEventListener('pointerup',up);g.addEventListener('pointercancel',up);
+});
+document.addEventListener('keydown',e=>{
+ const g=e.target.closest&&e.target.closest('.grip');if(!g||(e.key!=='ArrowUp'&&e.key!=='ArrowDown'))return;
+ e.preventDefault();const tr=g.closest('tr'),body=tr.parentNode;
+ if(e.key==='ArrowUp'&&tr.previousElementSibling)body.insertBefore(tr,tr.previousElementSibling);
+ if(e.key==='ArrowDown'&&tr.nextElementSibling)body.insertBefore(tr.nextElementSibling,tr);
+ g.focus();renderSyms();
+});
+// ---- drag symbols freely inside their board ----
+document.addEventListener('pointerdown',e=>{
+ const it=e.target.closest&&e.target.closest('.sy-item');if(!it)return;
+ const bd=it.parentNode,sx=e.clientX,sy=e.clientY,ox=it.offsetLeft,oy=it.offsetTop;
+ e.preventDefault();it.setPointerCapture(e.pointerId);it.classList.add('drag');
+ const mv=ev=>{
+  const x=Math.min(Math.max(0,ox+ev.clientX-sx),bd.clientWidth-it.offsetWidth),y=Math.max(0,oy+ev.clientY-sy);
+  it.style.left=x+'px';it.style.top=y+'px';
+  const need=y+it.offsetHeight+12;if(need>bd.clientHeight)bd.style.height=need+'px';
+ };
+ const up=()=>{it.classList.remove('drag');POS[it.dataset.rid]={x:it.offsetLeft,y:it.offsetTop};it.removeEventListener('pointermove',mv);it.removeEventListener('pointerup',up);it.removeEventListener('pointercancel',up)};
+ it.addEventListener('pointermove',mv);it.addEventListener('pointerup',up);it.addEventListener('pointercancel',up);
+});
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.sy-reset')){e.target.closest('.sy-board').querySelectorAll('.sy-item').forEach(it=>delete POS[it.dataset.rid]);renderSyms()}});
+// ---- hovering a row or a symbol highlights its partner ----
+document.addEventListener('mouseover',e=>{
+ const h=e.target.closest&&e.target.closest('[data-rid]');
+ document.querySelectorAll('.hl').forEach(x=>x.classList.remove('hl'));
+ if(h)document.querySelectorAll('[data-rid="'+h.dataset.rid+'"]').forEach(x=>x.classList.add('hl'));
+});
+
+
+function unitSearchText(name){
+ let extra=/^ป\./.test(name)?' ปืนใหญ่ ทหารปืนใหญ่ artillery':/^ค\./.test(name)?' เครื่องยิงลูกระเบิด ครก mortar':name.includes('ทหารราบ')?' infantry':name.includes('ทหารม้า')?' cavalry armor':'';
+ if(/Stryker/i.test(name))extra+=' สไตรเกอร์ สไตรเคอร์';
+ if(/M113/i.test(name))extra+=' เอ็ม113';
+ if(/รถถัง/.test(name))extra+=' tank';
+ return name+' '+extra;
+}
+function unitNormalize(text){return text.toLocaleLowerCase().replace(/[\s.()\-]/g,'')}
+function unitDistance(a,b){
+ let row=Array.from({length:b.length+1},(_,i)=>i);
+ for(let i=1;i<=a.length;i++){const next=[i];for(let j=1;j<=b.length;j++)next[j]=Math.min(next[j-1]+1,row[j]+1,row[j-1]+(a[i-1]===b[j-1]?0:1));row=next}
+ return row[b.length];
+}
+function setupUnitChoice(tr){
+ const select=tr.querySelector('.nm');
+ const picker=document.createElement('div');picker.className='row-unit-picker';select.before(picker);
+ const display=document.createElement('div');display.className='unit-choice';
+ const name=document.createElement('span');name.className='unit-name';display.append(name);
+ picker.append(display,select);
+}
+function setupBottomSearch(el,sd){
+ const add=el.querySelector('.add'),box=document.createElement('div');box.className='nmc bottom-unit-search';add.replaceWith(box);
+ const search=document.createElement('input');search.type='search';search.className='unit-inline-search';search.placeholder='+ เพิ่มหน่วย — พิมพ์เหล่าหรือยานรบ…';search.autocomplete='off';search.setAttribute('aria-label','ค้นหาเพื่อเพิ่มหน่วย');search.setAttribute('aria-expanded','false');
+ const results=document.createElement('div');results.className='unit-inline-results';results.hidden=true;results.id='suggest-'+el.closest('.card').id+'-'+sd;search.setAttribute('aria-controls',results.id);box.append(search,results);
+ function close(){results.hidden=true;search.setAttribute('aria-expanded','false')}
+ box.closeUnitSearch=close;
+ function choose(option){
+  const typed=search.value,isCustom=option.value==='__c';
+  addRow(el,sd,[isCustom?typed:option.value,1,isCustom?'':DB[sd][option.value]]);
+  close();search.value='';calc();
+  const tr=el.querySelector('.rows tr:last-child');
+  const input=tr.querySelector(isCustom?'.cn':'.n');input.focus();input.select();
+ }
+ function render(){
+  const q=unitNormalize(search.value),tokens=search.value.trim().split(/\s+/).map(unitNormalize).filter(Boolean);
+  const fire=el.closest('.card').id==='g-f';
+  const choices=Object.keys(DB[sd]).filter(k=>fire?isFire(k):!isFire(k)).map(k=>({value:k,textContent:k}));
+  let items=choices.map(o=>{const text=unitNormalize(unitSearchText(o.textContent));return {o,rank:!q?0:unitNormalize(o.textContent).startsWith(q)?0:text.includes(q)?1:tokens.length&&tokens.every(t=>text.includes(t))?2:99}}).filter(x=>x.rank<99);
+  let guessed=false;
+  if(!items.length&&q.length>=3){
+   guessed=true;
+   items=choices.map(o=>{const words=unitSearchText(o.textContent).split(/[\s()/]+/).map(unitNormalize).filter(Boolean);return {o,rank:Math.min(...words.map(w=>unitDistance(q,w)))}}).filter(x=>x.rank<=Math.max(1,Math.floor(q.length*.25)));
+  }
+  items.sort((a,b)=>a.rank-b.rank);results.replaceChildren();
+  const heading=document.createElement('div');heading.className='unit-suggest-heading';heading.textContent=guessed&&items.length?'น่าจะหมายถึงหน่วยเหล่านี้':q?'หน่วยที่ตรงกับคำค้น':'เลือกหน่วย หรือพิมพ์เพื่อค้นหา';results.append(heading);
+  if(!items.length){const empty=document.createElement('div');empty.className='unit-empty';empty.textContent='ไม่พบหน่วย ลองเปลี่ยนคำค้นหรือพิมพ์ชื่อเอง';results.append(empty)}
+  items.forEach(({o})=>{
+   const item=document.createElement('button');item.type='button';item.className='unit-result';
+   const label=document.createElement('span');label.textContent=o.textContent;const value=document.createElement('small');value.textContent='ค่า '+DB[sd][o.value];item.append(label,value);item.onclick=()=>choose(o);results.append(item);
+  });
+  const custom=document.createElement('button');custom.type='button';custom.className='unit-result unit-custom';custom.textContent='อื่นๆ';custom.onclick=()=>{choose({value:'__c'})};results.append(custom);
+  results.hidden=false;search.setAttribute('aria-expanded','true');
+ }
+ search.addEventListener('focus',()=>{document.querySelectorAll('.nmc').forEach(b=>{if(b!==box)b.closeUnitSearch?.()});render()});
+ search.addEventListener('input',e=>{e.stopPropagation();render()});
+ box.addEventListener('focusout',e=>{if(!box.contains(e.relatedTarget))close()});
+ box.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){search.focus();close();e.preventDefault();return}
+  if(e.target!==search&&!e.target.closest('.unit-inline-results'))return;
+  const buttons=[...results.querySelectorAll('button')],i=buttons.indexOf(document.activeElement);
+  if(e.key==='ArrowDown'){if(results.hidden)render();(buttons[i+1]||results.querySelector('button'))?.focus();e.preventDefault()}
+  if(e.key==='ArrowUp'){if(i<=0)search.focus();else buttons[i-1].focus();e.preventDefault()}
+  if(e.key==='Enter'&&e.target===search){if(results.hidden)render();results.querySelector('button')?.click();e.preventDefault()}
+ });
+}
+document.addEventListener('click',e=>document.querySelectorAll('.nmc').forEach(box=>{if(!box.contains(e.target))box.closeUnitSearch?.()}));
+
+
+function copEscape(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function missionCOP(m,M){
+ const symbols=document.documentElement.dataset.skin==='night'?SYM.d:SYM.n;
+ function group(g,sd){
+  const side=document.querySelector('#g-'+g.id+' .s-'+sd),pct=n(side.querySelector('.pct').value),cards=[];
+  side.querySelectorAll('.rows tr').forEach(tr=>{
+   const sel=tr.querySelector('.nm'),name=(sel.value==='__c'?tr.querySelector('.cn').value:sel.value).trim(),count=n(tr.querySelector('.n').value),sz=+tr.querySelector('.sz').value;
+   if(!name||count<=0)return;
+   const code=(sd==='r'&&UCODE_R[name])||UCODE[name]||(/^ป\./.test(name)?(/อจ\./.test(name)?'UCFHE--':'UCFH---'):/^ค\./.test(name)?(/อจ\./.test(name)?'UCFMS--':'UCFMT--'):'U------');
+   const strength=count*n(tr.querySelector('.v').dataset.base)*fac(sz)*pct/100;
+   cards.push('<div class="cop-unit" data-rid="'+tr.dataset.rid+'"><div class="ech">'+ECH_MARK[sz]+'</div><div class="cop-symbol">'+(symbols[sd][code]||symbols[sd]['U------'])+'</div><div class="cop-unit-name">'+copEscape(name)+'</div><div class="cop-count">'+copEscape(SIZES[sz])+' × '+f2(count)+'</div><div class="cop-unit-strength">กำลังรบสุทธิ '+f2(strength)+'</div></div>');
+  });
+  return '<section class="cop-group"><h4>'+g.t+' <small>กำลังรบ '+f2(pct)+'%</small></h4><div class="cop-units">'+(cards.join('')||'<p class="note">ยังไม่มีหน่วยที่เลือก</p>')+'</div></section>';
+ }
+ const ratio=M&&M.b>0&&M.r>0?fmt(M.b/M.r):'ยังไม่มีข้อมูลครบทั้งสองฝ่าย';
+ return '<section class="mission-cop" aria-label="ภาพรวมหน่วยทั้งสองฝ่าย"><div class="cop-heading"><div><span class="cop-eyebrow">COMMON OPERATIONAL PICTURE</span><h3>ภารกิจฝ่ายเรา: '+copEscape(m[0])+'</h3><p>'+copEscape(m[3])+'</p></div><div class="cop-ratio">อัตราส่วนอ้างอิง <b>'+m[2]+'</b><span>กำลังดำเนินกลยุทธ์ปัจจุบัน <strong>'+ratio+'</strong></span></div></div><div class="cop-sides">'+['b','r'].map(sd=>'<div class="cop-side cop-'+sd+'"><h3 class="cop-side-title">'+(sd==='b'?'ฝ่ายเรา':'ข้าศึก')+'</h3>'+G.map(g=>group(g,sd)).join('')+'</div>').join('')+'</div>'+missionInterpretation(m,M)+'<p class="cop-footnote">แสดงหน่วยตามที่เลือกและจำนวนที่กรอก ไม่ได้หักหรือจัดหน่วยเข้าภารกิจ • กำลังรบสุทธิคำนวณตามเปอร์เซ็นต์ของแต่ละกลุ่ม • ภาพนี้ไม่แสดงตำแหน่งจริง และอัตราส่วนอ้างอิงไม่ใช่ผลตัดสินความสำเร็จของภารกิจ</p></section>';
+}
+document.addEventListener('click',e=>{
+ const button=e.target.closest('[data-mission]');if(!button)return;
+ selectedMission=+button.dataset.mission;calc();
+ document.querySelector('[data-mission="'+selectedMission+'"]').focus({preventScroll:true});
+});
+
+
+function missionInterpretation(m,M){
+ const contexts={
+  '1 : 6':'ภารกิจรั้งหน่วงใช้อัตราส่วน 1 : 6 เป็นค่าอ้างอิงในตาราง 5-4 ไม่ใช่คำรับรองว่าจะรั้งหน่วงได้ตามระยะเวลาที่ต้องการ เพราะตารางไม่ได้กำหนดเวลา ระยะทาง หรือภูมิประเทศให้',
+  '1 : 3':'กรณีตั้งรับในที่มั่นเตรียมการหรือเสริมความแข็งแรง FM 5-0 ย่อหน้า 5-119 อธิบายจากประสบการณ์ในอดีตว่า ฝ่ายตั้งรับมีโอกาสสูงขึ้นที่จะเอาชนะฝ่ายเข้าตีซึ่งมีกำลังเทียบเท่าประมาณสามเท่า เมื่ออยู่ในที่มั่นตั้งรับที่เตรียมการไว้ ข้อความนี้ไม่ได้ระบุเปอร์เซ็นต์โอกาสสำเร็จ',
+  '1 : 2.5':'ค่าอ้างอิง 1 : 2.5 ใช้กับฝ่ายเราที่ตั้งรับเร่งด่วน ต้องแยกจากกรณีที่มั่นเตรียมการหรือเสริมความแข็งแรงซึ่งใช้อีกอัตราส่วนหนึ่ง',
+  '3 : 1':'ค่าอ้างอิง 3 : 1 ใช้เมื่อฝ่ายเราเข้าตีข้าศึกที่มีที่มั่นเตรียมการหรือเสริมความแข็งแรง การมีอัตราส่วนถึงค่านี้ยังไม่ยืนยันว่าจะยึดที่หมายได้',
+  '2.5 : 1':'ค่าอ้างอิง 2.5 : 1 ใช้เมื่อฝ่ายเราเข้าตีข้าศึกที่ตั้งรับเร่งด่วน ต้องตรวจว่าเงื่อนไขของข้าศึกตรงกับกรณีนี้ก่อนนำมาเทียบ',
+  '1 : 1':'ค่าอ้างอิง 1 : 1 ผูกกับการตีโต้ตอบทางปีกตามตาราง 5-4 จึงไม่ควรนำไปใช้เป็นข้อสรุปทั่วไปว่ากำลังเท่ากันเพียงพอสำหรับการเข้าตีทุกแบบ',
+  '18 : 1':'ค่าอ้างอิง 18 : 1 ใช้กับส่วนกำลังนำในการตีเจาะต่อที่มั่นเตรียมการหรือเสริมความแข็งแรง การนำยอดรวมทุกหน่วยมาเทียบอย่างที่โปรแกรมทำอยู่นี้ ยังไม่ยืนยันว่ากำลังของส่วนกำลังนำ ณ จุดตีเจาะมีอัตราส่วนดังกล่าว'
+ };
+ let assessment='ยังเทียบตัวเลขไม่ได้ ต้องมีข้อมูลกำลังดำเนินกลยุทธ์ทั้งฝ่ายเราและข้าศึก',detail='';
+ if(M&&M.r>0){
+  const target=M.r*m[1],delta=M.b-target,atReference=Math.abs(delta)<1e-8;
+  assessment='กำลังฝ่ายเรา '+f2(M.b)+' ต่อข้าศึก '+f2(M.r)+' — '+(atReference?'เท่ากับ':delta>0?'สูงกว่า':'ต่ำกว่า')+'ค่าอ้างอิง '+m[2];
+  detail='เมื่อใช้ค่ากำลังรบที่กรอกและวิธีคิดของโปรแกรม ค่าเทียบฝ่ายเราสำหรับอัตราส่วนนี้คือ '+f2(target)+' จึง'+(atReference?'ไม่มีส่วนต่างทางตัวเลข':delta>0?'สูงกว่าค่าเทียบ '+f2(delta):'มีส่วนต่างต่ำกว่าค่าเทียบ '+f2(-delta))+'. ';
+  detail+=delta>=-1e-8?'ผลนี้บอกเพียงว่าอัตราส่วนตัวเลขไม่ต่ำกว่าค่าอ้างอิง ยังสรุปไม่ได้ว่าภารกิจจะสำเร็จหรือมีความเสี่ยงต่ำ':'ผลนี้แสดงช่องว่างเชิงตัวเลข ยังสรุปไม่ได้ว่าภารกิจจะล้มเหลว ย่อหน้า 5-120 ให้ประเมินว่าปัจจัยอื่นเพิ่มอำนาจกำลังรบได้เพียงใด และหากยังไม่เพียงพอจึงพิจารณาการเพิ่มอำนาจกำลังรบ';
+ }
+ return '<section class="cop-explanation" aria-label="คำอธิบายผลตามตำรา"><h3>คำอธิบายผลตามตำรา</h3><p class="cop-assessment">'+assessment+'</p>'+(detail?'<p>'+detail+'</p>':'')+'<p>'+contexts[m[2]]+'</p><p><b>ก่อนสรุปผลภารกิจ:</b> ต้องประเมินภูมิประเทศ เวลาและพื้นที่ การฝึก ขวัญ ผู้นำ สภาพยุทโธปกรณ์ และผลการสนับสนุนด้วย ย่อหน้า 5-104 ไม่ให้เสนอหนทางปฏิบัติโดยอาศัยอัตราส่วนทางคณิตศาสตร์เพียงอย่างเดียว และย่อหน้า 5-120 ระบุว่าการเปรียบเทียบอำนาจกำลังรบเป็นเพียงการประเมินชั่วคราว</p><p class="cop-source">อ้างอิง <a href="FM_5-0.pdf#page=112" target="_blank" rel="noopener">FM 5-0 หน้า 5-26 ย่อหน้า 5-104</a> และ <a href="FM_5-0.pdf#page=114" target="_blank" rel="noopener">หน้า 5-28–5-29 ย่อหน้า 5-119–5-120 ตาราง 5-4</a> • ส่วนต่างคำนวณโดยโปรแกรม ไม่ใช่สูตรค่าสัมประสิทธิ์รายยานรบที่ตำรารับรอง</p></section>';
+}
+
+
+
+const BOS7_SYMBOLS={"n":{"b":{"UUM---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"50.56\" height=\"34.56\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><text x=\"100\" y=\"103\" text-anchor=\"middle\" font-size=\"45\" font-family=\"Arial\" font-weight=\"bold\" dominant-baseline=\"middle\" stroke-width=\"3\" stroke=\"none\" fill=\"black\" >MI</text></svg>","UCD---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"50.56\" height=\"34.56\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M25,150 C25,110 175,110 175,150\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path></svg>","UCE---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"50.56\" height=\"34.56\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M 60,118 V 83 h 80 v 35  M 100,83 V 110\" stroke-width=\"4.285714285714286\" stroke=\"black\" fill=\"none\" ></path></svg>","USM---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"50.56\" height=\"34.56\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M100,50L100,150M25,100L175,100\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path></svg>","USX---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"50.56\" height=\"34.56\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M70,90 c10,0 10,20 0,20 m10,-10 l40,0 m10,-10 c-10,0 -10,20 0,20\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path></svg>","UUS---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"50.56\" height=\"34.56\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(128,224,255)\" fill-opacity=\"1\" ></path><path d=\"M25,50 100,110 100,90 175,150\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path></svg>"},"r":{"UUM---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"48.64\" height=\"48.64\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><text x=\"100\" y=\"103\" text-anchor=\"middle\" font-size=\"45\" font-family=\"Arial\" font-weight=\"bold\" dominant-baseline=\"middle\" stroke-width=\"3\" stroke=\"none\" fill=\"black\" >MI</text></svg>","UCD---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"48.64\" height=\"48.64\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M70,140 C70,115 130,115 130,140\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path></svg>","UCE---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"48.64\" height=\"48.64\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M 60,118 V 83 h 80 v 35  M 100,83 V 110\" stroke-width=\"4.285714285714286\" stroke=\"black\" fill=\"none\" ></path></svg>","USM---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"48.64\" height=\"48.64\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M100,28L100,172M28,100L172,100\" stroke-width=\"3\" stroke=\"black\" fill=\"black\" ></path></svg>","USX---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"48.64\" height=\"48.64\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M70,90 c10,0 10,20 0,20 m10,-10 l40,0 m10,-10 c-10,0 -10,20 0,20\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path></svg>","UUS---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"48.64\" height=\"48.64\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"black\" fill=\"rgb(255,128,128)\" fill-opacity=\"1\" ></path><path d=\"M57,70 100,110 100,90 143,130\" stroke-width=\"3\" stroke=\"black\" fill=\"none\" ></path></svg>"}},"d":{"b":{"UUM---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"50.56\" height=\"34.56\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><text x=\"100\" y=\"103\" text-anchor=\"middle\" font-size=\"45\" font-family=\"Arial\" font-weight=\"bold\" dominant-baseline=\"middle\" stroke-width=\"3\" stroke=\"none\" fill=\"#ff4a3a\" >MI</text></svg>","UCD---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"50.56\" height=\"34.56\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M25,150 C25,110 175,110 175,150\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path></svg>","UCE---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"50.56\" height=\"34.56\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M 60,118 V 83 h 80 v 35  M 100,83 V 110\" stroke-width=\"4.285714285714286\" stroke=\"#ff4a3a\" fill=\"none\" ></path></svg>","USM---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"50.56\" height=\"34.56\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M100,50L100,150M25,100L175,100\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path></svg>","USX---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"50.56\" height=\"34.56\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M70,90 c10,0 10,20 0,20 m10,-10 l40,0 m10,-10 c-10,0 -10,20 0,20\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path></svg>","UUS---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"50.56\" height=\"34.56\" viewBox=\"21 46 158 108\"><path d=\"M25,50 l150,0 0,100 -150,0 z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M25,50 100,110 100,90 175,150\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path></svg>"},"r":{"UUM---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"48.64\" height=\"48.64\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><text x=\"100\" y=\"103\" text-anchor=\"middle\" font-size=\"45\" font-family=\"Arial\" font-weight=\"bold\" dominant-baseline=\"middle\" stroke-width=\"3\" stroke=\"none\" fill=\"#ff4a3a\" >MI</text></svg>","UCD---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"48.64\" height=\"48.64\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M70,140 C70,115 130,115 130,140\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path></svg>","UCE---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"48.64\" height=\"48.64\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M 60,118 V 83 h 80 v 35  M 100,83 V 110\" stroke-width=\"4.285714285714286\" stroke=\"#ff4a3a\" fill=\"none\" ></path></svg>","USM---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"48.64\" height=\"48.64\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M100,28L100,172M28,100L172,100\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"#ff4a3a\" ></path></svg>","USX---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"48.64\" height=\"48.64\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M70,90 c10,0 10,20 0,20 m10,-10 l40,0 m10,-10 c-10,0 -10,20 0,20\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path></svg>","UUS---":"<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.2\" baseProfile=\"tiny\" width=\"48.64\" height=\"48.64\" viewBox=\"24 24 152 152\"><path d=\"M 100,28 L172,100 100,172 28,100 100,28 Z\" stroke-width=\"4\" stroke=\"#ff4a3a\" fill=\"none\" fill-opacity=\"1\" ></path><path d=\"M57,70 100,110 100,90 143,130\" stroke-width=\"3\" stroke=\"#ff4a3a\" fill=\"none\" ></path></svg>"}}};
+const BOS7_CATALOG=[
+ {title:'การดำเนินกลยุทธ์',units:sd=>Object.keys(DB[sd]).filter(k=>!isFire(k)).map(name=>({name,code:UCODE[name]||'U------'}))},
+ {title:'การยิงสนับสนุน',units:sd=>Object.keys(DB[sd]).filter(isFire).map(name=>({name,code:/^ป\./.test(name)?(/อจ\./.test(name)?'UCFHE--':'UCFH---'):'U------'}))},
+ {title:'การข่าวกรอง',units:()=>[{name:'หน่วยข่าวกรองทหาร',code:'UUM---'}]},
+ {title:'การป้องกันภัยทางอากาศ',units:()=>[{name:'หน่วยป้องกันภัยทางอากาศ',code:'UCD---'}]},
+ {title:'ความคล่องแคล่ว การต่อต้านความคล่องแคล่ว และความอยู่รอด',units:()=>[{name:'หน่วยทหารช่าง',code:'UCE---'}]},
+ {title:'การช่วยรบ',units:()=>[{name:'หน่วยแพทย์',code:'USM---'},{name:'หน่วยซ่อมบำรุง',code:'USX---'}]},
+ {title:'การบังคับบัญชาและควบคุม',units:()=>[{name:'หน่วยสื่อสาร',code:'UUS---'}]}
+];
+const WFS6_CATALOG=[
+ {title:'การบังคับบัญชาและควบคุม',units:BOS7_CATALOG[6].units},
+ {title:'การเคลื่อนที่และการดำเนินกลยุทธ์',units:sd=>[...BOS7_CATALOG[0].units(sd),...BOS7_CATALOG[4].units(sd)]},
+ {title:'การข่าวกรอง',units:BOS7_CATALOG[2].units},
+ {title:'การยิง',units:sd=>[...BOS7_CATALOG[1].units(sd),...BOS7_CATALOG[3].units(sd)]},
+ {title:'การดำรงสภาพ',units:BOS7_CATALOG[5].units},
+ {title:'การพิทักษ์หน่วย',units:()=>[{name:'หน่วยทหารช่าง (งานความอยู่รอด)',code:'UCE---'}]}
+];
+let unitFramework='bos7';
+const sharedFrameworkUnits={b:[],r:[]};let sharedUnitId=0;
+const frameworkBases=i=>unitFramework==='bos7'?[i]:[[6],[0,4],[2],[1,3],[5],[4]][i];
+const activeUnitCatalog=()=>unitFramework==='bos7'?BOS7_CATALOG:WFS6_CATALOG;
+function sharedUnitsForCategory(i,sd){return frameworkBases(i).flatMap(base=>BOS7_CATALOG[base].units(sd).map(unit=>({...unit,bos:base})))}
+function captureFrameworkRows(){
+ const seen={b:new Map(),r:new Map()};
+ document.querySelectorAll('#bos7-tables .bos7-side').forEach(side=>{
+  const sd=side.dataset.team;
+  side.querySelectorAll('tbody:not(.bos7-linked) tr').forEach(tr=>{
+   const value=tr.querySelector('.bos7-type').value;if(value==='')return;
+   const unit=tr.bos7Units[+value];seen[sd].set(tr.dataset.sharedId,{id:tr.dataset.sharedId,name:unit.name,code:unit.code,bos:unit.bos,size:tr.querySelector('.bos7-size').value,count:tr.querySelector('.bos7-count').value});
+  });
+ });
+ for(const sd of ['b','r'])sharedFrameworkUnits[sd]=[...seen[sd].values()];
+}
+function mirrorFrameworkRow(tr){
+ if(!tr||!tr.querySelector('.bos7-type'))return;
+ document.querySelectorAll('#bos7-tables tr[data-shared-id="'+tr.dataset.sharedId+'"]').forEach(other=>{
+  if(other===tr)return;const selected=tr.bos7Units[+tr.querySelector('.bos7-type').value];
+  other.querySelector('.bos7-type').value=tr.querySelector('.bos7-type').value===''?'':String(other.bos7Units.findIndex(u=>u.bos===selected.bos&&u.name===selected.name));
+  other.querySelector('.bos7-size').value=tr.querySelector('.bos7-size').value;other.querySelector('.bos7-count').value=tr.querySelector('.bos7-count').value;updateBos7Row(other);
+ });
+}
+function bos7Symbol(code,sd){const mode=rootEl.dataset.skin==='night'?'d':'n';return BOS7_SYMBOLS[mode][sd][code]||SYM[mode][sd][code]||SYM[mode][sd]['U------']}
+function renderBos7Tables(){
+ const root=document.getElementById('bos7-tables');
+ const catalog=activeUnitCatalog(),label=unitFramework==='bos7'?'BOS 7':'WFF 6';
+ root.innerHTML='<div class="framework-switch" role="group" aria-label="กรอบจัดหมวดหน่วย"><button type="button" data-framework="bos7" aria-pressed="'+(unitFramework==='bos7')+'">BOS 7</button><button type="button" data-framework="wfs6" aria-pressed="'+(unitFramework==='wfs6')+'">WFF 6</button></div><p class="framework-note">'+(unitFramework==='bos7'?'ระบบปฏิบัติการในสนามรบ 7 ระบบ':'หน้าที่ในการรบ 6 ด้าน • ADP 3-0 หน้า 5-3–5-5')+' • หน่วยดำเนินกลยุทธ์และยิงสนับสนุนเชื่อมจากตารางด้านบน • ใช้รายการหน่วยชุดเดียวกันทั้งสองกรอบ</p><p class="note">เลือกประเภทหน่วย ขนาด และจำนวน แยกฝ่ายเราและข้าศึก • ตารางนี้เป็นทะเบียนหน่วยแยกจากการคำนวณด้านบน</p>'+catalog.map((g,i)=>'<details class="card bos7-category"'+(i===0?' open':'')+'><summary><span class="bos-number">'+(i+1)+'</span>'+g.title+'</summary><div class="bos7-pair">'+['b','r'].map(sd=>'<div class="bos7-side" data-category="'+i+'" data-team="'+sd+'"><h3 class="bos7-'+sd+'">'+(sd==='b'?'ฝ่ายเรา':'ข้าศึก')+'</h3><table><thead><tr><th>ประเภทหน่วย</th><th>ขนาด</th><th>จำนวน</th><th></th></tr></thead><tbody></tbody></table><button type="button" class="bos7-add">+ เพิ่มหน่วย</button></div>').join('')+'</div></details>').join('');
+ root.querySelectorAll('.bos7-side').forEach(side=>{const saved=sharedFrameworkUnits[side.dataset.team].filter(row=>frameworkBases(+side.dataset.category).includes(row.bos));if(saved.length)saved.forEach(row=>bos7AddRow(side,row));else if(!frameworkSource(+side.dataset.category))bos7AddRow(side);side.querySelector('.bos7-add').onclick=()=>{bos7AddRow(side);side.querySelector('tbody:not(.bos7-linked) tr:last-child select').focus()}});
+ refreshBos7Sources();
+ root.oninput=e=>{e.stopPropagation();updateBos7Row(e.target.closest('tr'));mirrorFrameworkRow(e.target.closest('tr'))};
+ root.onchange=e=>{e.stopPropagation();updateBos7Row(e.target.closest('tr'));mirrorFrameworkRow(e.target.closest('tr'))};
+ root.querySelectorAll('[data-framework]').forEach(button=>button.onclick=()=>{if(button.dataset.framework===unitFramework)return;captureFrameworkRows();unitFramework=button.dataset.framework;renderBos7Tables()});
+}
+function bos7AddRow(side,saved){
+ const i=+side.dataset.category,sd=side.dataset.team,units=sharedUnitsForCategory(i,sd),tr=document.createElement('tr');
+ tr.innerHTML='<td><div class="bos7-preview"></div><div class="bos7-picker"><span class="bos7-selected" aria-hidden="true">เลือกหน่วย</span><select class="bos7-type" aria-label="'+copEscape(activeUnitCatalog()[i].title+' '+(sd==='b'?'ฝ่ายเรา':'ข้าศึก')+' ประเภทหน่วย')+'"><option value="">เลือกหน่วย</option>'+units.map((u,j)=>'<option value="'+j+'">'+copEscape(u.name)+'</option>').join('')+'</select></div></td><td><select class="bos7-size" aria-label="ขนาดหน่วยในตาราง">'+SIZES.map((name,j)=>'<option value="'+j+'"'+(j===defSize()?' selected':'')+'>'+name+'</option>').join('')+'</select></td><td><input class="bos7-count" type="number" min="0" step="1" value="1" aria-label="จำนวนหน่วยในตาราง"></td><td><button type="button" class="bos7-delete" aria-label="ลบหน่วยในตาราง">×</button></td>';
+ tr.dataset.sharedId=saved?.id||'su'+(++sharedUnitId);tr.bos7Units=units;side.querySelector('tbody:not(.bos7-linked)').append(tr);tr.querySelector('.bos7-delete').onclick=()=>document.querySelectorAll('#bos7-tables tr[data-shared-id="'+tr.dataset.sharedId+'"]').forEach(row=>row.remove());
+ if(saved){tr.querySelector('.bos7-type').value=String(units.findIndex(u=>u.bos===saved.bos&&u.name===saved.name));tr.querySelector('.bos7-size').value=saved.size;tr.querySelector('.bos7-count').value=saved.count;updateBos7Row(tr)}
+}
+function updateBos7Row(tr){
+ if(!tr)return;const sel=tr.querySelector('.bos7-type');if(!sel)return;
+ const unit=sel.value===''?null:tr.bos7Units[+sel.value],sd=tr.closest('.bos7-side').dataset.team;
+ tr.querySelector('.bos7-selected').textContent=unit?unit.name:'เลือกหน่วย';
+ tr.querySelector('.bos7-preview').innerHTML=unit?'<span class="ech">'+ECH_MARK[+tr.querySelector('.bos7-size').value]+'</span>'+bos7Symbol(unit.code,sd)+'<small>× '+Math.max(0,n(tr.querySelector('.bos7-count').value))+'</small>':'';
+}
+renderBos7Tables();
+modeBtns.forEach(button=>button.addEventListener('click',()=>document.querySelectorAll('#bos7-tables tbody tr').forEach(updateBos7Row)));
+
+
+function frameworkSource(i){return unitFramework==='bos7'?(i===0?'m':i===1?'f':null):(i===1?'m':i===3?'f':null)}
+function refreshBos7Sources(){
+ const sides=document.querySelectorAll('#bos7-tables .bos7-side');if(!sides.length)return;
+ sides.forEach(side=>{
+  const source=frameworkSource(+side.dataset.category);if(!source)return;
+  let body=side.querySelector('.bos7-linked');
+  if(!body){body=document.createElement('tbody');body.className='bos7-linked';side.querySelector('table').insertBefore(body,side.querySelector('tbody'));
+   const note=document.createElement('p');note.className='bos7-source-note';const link=document.createElement('a');link.href='#g-'+source;link.textContent='เชื่อมจากตารางด้านบน — แก้ไขหน่วยที่ต้นทาง';note.append(link);side.querySelector('table').before(note);
+  }
+  const sd=side.dataset.team,rows=[];
+  document.querySelectorAll('#g-'+source+' .s-'+sd+' .rows tr').forEach(tr=>{
+   const select=tr.querySelector('.nm'),name=select.value==='__c'?tr.querySelector('.cn').value:select.value;if(!name.trim())return;
+   const code=(sd==='r'&&UCODE_R[name])||UCODE[name]||(/^ป\./.test(name)?(/อจ\./.test(name)?'UCFHE--':'UCFH---'):'U------');
+   const size=+tr.querySelector('.sz').value,count=n(tr.querySelector('.n').value);
+   rows.push('<tr><td><div class="bos7-preview"><span class="ech">'+ECH_MARK[size]+'</span>'+bos7Symbol(code,sd)+'</div><span class="bos7-linked-name">'+copEscape(name)+'</span></td><td>'+copEscape(SIZES[size])+'</td><td>'+f2(count)+'</td><td></td></tr>');
+  });
+  body.innerHTML=rows.join('')||'<tr><td colspan="4" class="note">ยังไม่มีหน่วยในตารางด้านบน</td></tr>';
+ });
+}
+modeBtns.forEach(button=>button.addEventListener('click',refreshBos7Sources));
+
+
+const QUALITY_TOPICS=[['intelligence','การข่าว'],['maneuver','การดำเนินกลยุทธ์'],['fires','การยิงสนับสนุน'],['airdefense','การป้องกันภัยทางอากาศ'],['mobility','ความคล่องแคล่ว'],['support','การช่วยรบ'],['command','การควบคุมบังคับบัญชา'],['leadership','ความเป็นผู้นำ'],['information','ข้อมูล']];
+const QUALITY_ADVANTAGE={'':'ยังไม่ประเมิน','friendly':'ฝ่ายเรา','enemy':'ข้าศึก','equal':'ใกล้เคียงกัน','insufficient':'ข้อมูลไม่เพียงพอ'};
+let qualitySaved={};try{qualitySaved=JSON.parse(localStorage.getItem('quality-comparison:v1')||'{}')||{}}catch(e){}
+function buildQualityTable(){
+ const body=document.getElementById('quality-rows');
+ QUALITY_TOPICS.forEach(([id,title])=>{
+  const tr=document.createElement('tr');tr.dataset.topic=id;
+  const heading=document.createElement('th');heading.scope='row';heading.textContent=title;tr.append(heading);
+  [['friendlyStrength','ฝ่ายเรา จุดแข็ง'],['friendlyWeakness','ฝ่ายเรา จุดอ่อน'],['enemyStrength','ข้าศึก จุดแข็ง'],['enemyWeakness','ข้าศึก จุดอ่อน']].forEach(([field,label])=>{
+   const td=document.createElement('td'),input=document.createElement('textarea');input.rows=3;input.dataset.quality=field;input.setAttribute('aria-label',title+' '+label);input.placeholder=label;input.value=typeof qualitySaved[id]?.[field]==='string'?qualitySaved[id][field]:'';td.append(input);tr.append(td);
+  });
+  const advantage=document.createElement('td'),select=document.createElement('select');select.dataset.quality='advantage';select.setAttribute('aria-label',title+' ความได้เปรียบ');
+  Object.entries(QUALITY_ADVANTAGE).forEach(([value,text])=>{const option=document.createElement('option');option.value=value;option.textContent=text;select.append(option)});
+  select.value=Object.hasOwn(QUALITY_ADVANTAGE,qualitySaved[id]?.advantage)?qualitySaved[id].advantage:'';advantage.append(select);tr.append(advantage);
+  const reason=document.createElement('td'),input=document.createElement('textarea');input.rows=3;input.dataset.quality='reason';input.setAttribute('aria-label',title+' เหตุผลประกอบความได้เปรียบ');input.placeholder='เหตุผล หลักฐาน แหล่งข้อมูล หรือวันที่ของข้อมูล';input.value=typeof qualitySaved[id]?.reason==='string'?qualitySaved[id].reason:'';reason.append(input);tr.append(reason);body.append(tr);
+  select.addEventListener('change',()=>tr.dataset.advantage=select.value);tr.dataset.advantage=select.value;
+ });
+ const section=document.getElementById('qualitative-comparison');
+ function save(e){
+  const input=e.target;if(!input.dataset.quality)return;e.stopPropagation();
+  const id=input.closest('tr').dataset.topic;if(!qualitySaved[id]||typeof qualitySaved[id]!=='object')qualitySaved[id]={};qualitySaved[id][input.dataset.quality]=input.value;
+  const status=document.getElementById('quality-save');
+  try{localStorage.setItem('quality-comparison:v1',JSON.stringify(qualitySaved));status.textContent='บันทึกแล้วในเบราว์เซอร์'}catch(error){status.textContent='บันทึกไม่ได้ ข้อมูลยังแสดงอยู่ในหน้านี้'}
+ }
+ section.addEventListener('input',save);section.addEventListener('change',save);
+}
+buildQualityTable();
+syncUnitQuality();
+
+
+function syncUnitQuality(){
+ for(const [topic,group] of [['maneuver','m'],['fires','f']]){
+  const row=document.querySelector('#quality-rows tr[data-topic="'+topic+'"]');if(!row)continue;
+  let badge=row.querySelector('.quality-auto');if(!badge){badge=document.createElement('small');badge.className='quality-auto';badge.textContent='อัตโนมัติจากหน่วยด้านบน';row.querySelector('th').append(badge)}
+  const read=sd=>{
+   const side=document.querySelector('#g-'+group+' .s-'+sd);let quantity=0,raw=0;const units=[];
+   side.querySelectorAll('.rows tr').forEach(tr=>{
+    const select=tr.querySelector('.nm'),name=select.value==='__c'?tr.querySelector('.cn').value:select.value,count=n(tr.querySelector('.n').value);
+    if(!name.trim()||count<=0)return;quantity+=count;raw+=count*n(tr.querySelector('.v').dataset.base)*fac(+tr.querySelector('.sz').value);units.push(name+' ('+SIZES[+tr.querySelector('.sz').value]+' × '+f2(count)+')');
+   });
+   const pct=n(side.querySelector('.pct').value);return {quantity,raw,pct,net:raw*pct/100,units};
+  };
+  const b=read('b'),r=read('r');
+  const set=(field,text)=>{const input=row.querySelector('[data-quality="'+field+'"]');input.value=text;input.readOnly=true;input.setAttribute('aria-description','อัปเดตจากตารางหน่วยด้านบน')};
+  for(const [sd,side] of [['friendly',b],['enemy',r]]){
+   set(sd+'Strength',side.units.length?'หน่วยที่เลือก '+side.units.length+' รายการ รวม '+f2(side.quantity)+' หน่วย\n'+side.units.join('\n')+'\nค่ากำลังรบก่อนปรับ '+f2(side.raw):'ยังไม่ได้เลือกหน่วย');
+   set(sd+'Weakness',side.units.length?'กำลังรบที่กรอก '+f2(side.pct)+'%\nค่ากำลังรบสุทธิ '+f2(side.net)+'\nส่วนต่างจากค่าเต็ม '+f2(side.raw-side.net):'ยังไม่มีข้อมูลหน่วยสำหรับเปรียบเทียบ');
+  }
+  const select=row.querySelector('[data-quality="advantage"]');select.disabled=true;
+  let result='insufficient',reason='ยังไม่มีค่ากำลังรบสุทธิมากกว่าศูนย์ครบทั้งสองฝ่าย';
+  if(b.net>0&&r.net>0){const d=b.net-r.net;result=Math.abs(d)<1e-8?'equal':d>0?'friendly':'enemy';reason='เทียบเฉพาะค่ากำลังรบที่กรอก: ฝ่ายเรา '+f2(b.net)+' ต่อข้าศึก '+f2(r.net)+' = '+fmt(b.net/r.net)+'\n'+(result==='equal'?'ค่ารวมเท่ากัน':(d>0?'ฝ่ายเรา':'ข้าศึก')+'มีค่ารวมสูงกว่า '+f2(Math.abs(d)))+'\nคำนวณจากจำนวน × ค่าตามขนาดหน่วย × เปอร์เซ็นต์กำลังรบ\nจุดแข็ง–จุดอ่อนด้านคุณภาพอื่นยังไม่ได้ประเมิน'}
+  select.value=result;row.dataset.advantage=result;set('reason',reason);
+ }
+}
+
+</script>
+</body>
+</html>
